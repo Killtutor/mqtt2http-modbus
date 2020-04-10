@@ -126,7 +126,7 @@ function initServerTCP(sede,puerto){
                 try {
                     console.log("Consultando inputRegister, Dirección: ",addr," Esclavo:",unitID," resultado:")
                     const DATA= await modbusStorage.getItem(sede)
-                    return resolve(Number(DATA.rtu[unitID].ir[addr])?Number(DATA[sede].rtu[unitID].ir[addr]):0);
+                    return resolve(Number(DATA.rtu[unitID].ir[addr])?Number(DATA.rtu[unitID].ir[addr]):0);
                 } catch (error) {resolve(0)
                     return console.error(error)
                 }
@@ -137,7 +137,7 @@ function initServerTCP(sede,puerto){
                 try {
                     const DATA= await modbusStorage.getItem(sede)
                     console.log("Consultando holdingRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA.rtu[unitID].ir[addr])
-                    return resolve(Number(DATA.rtu[unitID].hr[addr])?Number(DATA[sede].rtu[unitID].hr[addr]):0);
+                    return resolve(Number(DATA.rtu[unitID].hr[addr])?Number(DATA.rtu[unitID].hr[addr]):0);
                 } catch (error) {
                     resolve(0)
                     return console.error(error)
