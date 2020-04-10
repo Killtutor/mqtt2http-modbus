@@ -1,53 +1,57 @@
 "use strict";
-//////////////////////DATA
+
 const Storage = require('node-persist');
 var modbusStorage = Storage.create({dir:"data/modbus"})
+// Init Function, Runs once on server livespan
 const initialize= async()=>{
+    //init modbus storage 
     await modbusStorage.init()
 
+    //MQTT client
+    const mqtt = require('mqtt')
+    const client  = mqtt.connect('mqtt://127.0.0.1:1883')
+
+    client.on('connect', function () {
+        console.info("Modbus Conectado al broker. Subscribite con http para empezar a escuchar")
+    })
+        
+    //formato esperado de topico: sede/RTU#/retype/addr#
+    //retype could be input, coil, holding, discrete
+    client.on('message', async function (topic, message) {
+        const proTopic = topic.split("/")
+        const sede = proTopic[0]
+        const RTU = parseInt(proTopic[1])
+        const retype = proTopic[2]==="input"?"ir":proTopic[2]==="holding"?"hr":proTopic[2]==="discrete"?"dr":"cr"
+        const addr = parseInt(proTopic[3])
+        const context = message.toString();
+        const data = await modbusStorage.getItem(sede)
+        data.rtu[RTU][retype][addr] = parseInt(context)
+        modbusStorage.setItem(sede, data)
+        console.info(`recibi topico ${topic}. sede:${sede}, RTU#${RTU}, register:${proTopic[2]}, direccion: ${addr}, data:${parseInt(context)}`)
+    })
+
     var puerto = await modbusStorage.getItem("lastUsedPort")
-    console.log("Puerto modbus",puerto)
     if (!puerto){
         return modbusStorage.setItem("lastUsedPort",8049)
     }else{
         modbusStorage.forEach(async(dato)=>{
             if (dato.key!="lastUsedPort" && dato.key!="lastUsedHTTPPort" && dato.value.hasOwnProperty("puerto")){
-                console.info(dato.value.nombre,dato.value.puerto)
+                console.log(dato.key)
                 initServerTCP(dato.value.nombre,dato.value.puerto)
                 client.subscribe(`${dato.value.nombre}/#`) 
             }
         })
     }
 }
-initialize()
-exports.initOrReInit = initialize
+if (!module.parent) {
+    // ran with `node init.js`
+   initialize()
+}
+//exports.initOrReInit = initialize
 //En este objeto se guardará toda la info necesaria (sera el buffer de nuestro gateway mqtt-modbus)
 //var DATA = {lastUsedPort:8049}
 //ejplo objetio dentro de data
 //ejemplo={nombre:"ejemplo",puerto:"8020",rtu:[{ir:[],dr:[],hr:[]},{}]}
-
-//MQTT client
-const mqtt = require('mqtt')
-const client  = mqtt.connect('mqtt://127.0.0.1:1883')
-
-client.on('connect', function () {
-    console.info("Modbus Conectado al broker. Subscribite con http para empezar a escuchar")
-})
-    
-//formato esperado de topico: sede/RTU#/retype/addr#
-//retype could be input, coil, holding
-client.on('message', async function (topic, message) {
-    const proTopic = topic.split("/")
-    const sede = proTopic[0]
-    const RTU = parseInt(proTopic[1])
-    const retype = proTopic[2]==="input"?"ir":proTopic[2]==="holding"?"hr":proTopic[2]==="discrete"?"dr":"cr"
-    const addr = parseInt(proTopic[3])
-    const context = message.toString();
-    const data = await modbusStorage.getItem(sede)
-    data.rtu[RTU][retype][addr] = parseInt(context)
-    modbusStorage.setItem(sede, data)
-    console.info(`recibi topico ${topic}. sede:${sede}, RTU#${RTU}, register:${proTopic[2]}, direccion: ${addr}, data:${parseInt(context)}`)
-})
 
 
 /////////////////////////////////////////////////////////////////////
@@ -107,54 +111,56 @@ function initServerTCP(sede,puerto){
             console.log("Publicando setcoil Message, Dirección: ",addr," Esclavo:",unitID," resultado:",state)
         },
         getCoil: function(addr, unitID) {
-            return new Promise(async (resolve,reject)=>{
+            return new Promise(async (resolve)=>{
                 try {
                     const DATA= await modbusStorage.getItem(sede)
-                    console.log("Consultando CoilRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA[sede].rtu[unitID].ir[addr])
-                    return resolve(DATA[sede].rtu[unitID].cr[addr]?true:false)
-                } catch (error) {
-                    reject(error)
+                    console.log("Consultando CoilRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA.rtu[unitID].ir[addr])
+                    return resolve(DATA.rtu[unitID].cr[addr]?true:false)
+                } catch (error) {resolve(false)
+                    console.error(error)
                 }
             })
         },
         getInputRegister: function(addr, unitID) {
-            return new Promise(async (resolve,reject)=>{
+            return new Promise(async (resolve)=>{
                 try {
+                    console.log("Consultando inputRegister, Dirección: ",addr," Esclavo:",unitID," resultado:")
                     const DATA= await modbusStorage.getItem(sede)
-                    console.log("Consultando inputRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA[sede].rtu[unitID].ir[addr])
-                    return resolve(Number(DATA[sede].rtu[unitID].ir[addr])?Number(DATA[sede].rtu[unitID].ir[addr]):0);
-                } catch (error) {
-                    return reject(error)
+                    return resolve(Number(DATA.rtu[unitID].ir[addr])?Number(DATA[sede].rtu[unitID].ir[addr]):0);
+                } catch (error) {resolve(0)
+                    return console.error(error)
                 }
             })
         },
         getHoldingRegister: async function(addr, unitID) {
-            return new Promise(async (resolve,reject)=>{
+            return new Promise(async (resolve)=>{
                 try {
                     const DATA= await modbusStorage.getItem(sede)
-                    console.log("Consultando holdingRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA[sede].rtu[unitID].ir[addr])
-                    return resolve(Number(DATA[sede].rtu[unitID].hr[addr])?Number(DATA[sede].rtu[unitID].hr[addr]):0);
+                    console.log("Consultando holdingRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA.rtu[unitID].ir[addr])
+                    return resolve(Number(DATA.rtu[unitID].hr[addr])?Number(DATA[sede].rtu[unitID].hr[addr]):0);
                 } catch (error) {
-                    return reject(error)
+                    resolve(0)
+                    return console.error(error)
                 }
             })
         },
         getDiscreteInput: async function(addr, unitID) {
-            return new Promise(async (resolve,reject)=>{
+            return new Promise(async (resolve)=>{
                 try {
                     const DATA= await modbusStorage.getItem(sede)
-                    console.log("Consultando coilRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA[sede].rtu[unitID].ir[addr])
-                    return resolve(DATA[sede].rtu[unitID].dr[addr]?true:false);
+                    console.log("Consultando coilRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA.rtu[unitID].ir[addr])
+                    return resolve(DATA.rtu[unitID].dr[addr]?true:false);
                 } catch (error) {
-                    return reject(error)
+                    resolve(false)
+                    return console.error(error)
                 }
             })
         }
     };
     // set the server to answer for modbus requests
-    var serverTCP = new ModbusRTU.ServerTCP(vector, { host: "127.0.0.1", port:puerto, debug: true });
+    var serverTCP = new ModbusRTU.ServerTCP(vector, { host: "0.0.0.0", port:puerto, debug: true });
     serverTCP.on("initialized", function() {
-        console.log(`initialized sede ${sede} en servidor modbus://0.0.0.0:${puerto}`);
+        console.log(`initialized sede ${sede} en servidor modbus://0.0.0.0:${puerto}, espero topico de la forma sede/RTU#/retype/addr#`);
     });
     
     serverTCP.on("socketError", function(err) {
