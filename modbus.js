@@ -65,8 +65,8 @@ exports.subscribeTopicoModbus= async (topico)=>{
     await modbusStorage.setItem("lastUsedPort",(parseInt(await modbusStorage.getItem("lastUsedPort"))+1))
     const DATA = {}
     DATA[topico]={nombre:topico,puerto:parseInt(await modbusStorage.getItem("lastUsedPort")),rtu:[]}
-    console.log(DATA)
-    DATA[topico].rtu= new Array(256).fill({ir:[0],hr:[0],dr:[0]})
+    //console.log(DATA)
+    DATA[topico].rtu= new Array(256).fill({ir:[0],hr:[0],dr:[0],cr:[]})
     modbusStorage.setItem(topico,DATA[topico])
     initServerTCP(DATA[topico].nombre,DATA[topico].puerto)
     client.subscribe(`${topico}/#`)
@@ -98,39 +98,57 @@ function initServerTCP(sede,puerto){
    // create an empty modbus client
     var ModbusRTU = require("modbus-serial");
     var vector = {
-        // getMultipleHoldingRegisters:function(addr, length, unitID) {
-        //     console.log("Consultando DiscreteInputRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA[sede].rtu[unitID].ir[addr])
-        //     return DATA[sede].rtu[unitID].dir[addr];
-        // },
         setRegister:function (addr, value, unitID){
             client.publish(`${sede}/${unitID}/setcoil/${addr}`,value)
             console.log("Publicando setRegister Message, Dirección: ",addr," Esclavo:",unitID," resultado:",value)
-            return true;
         },
         setCoil:function(addr,state, unitID) {
             client.publish(`${sede}/${unitID}/setcoil/${addr}`,state)
             console.log("Publicando setcoil Message, Dirección: ",addr," Esclavo:",unitID," resultado:",state)
-            return true;
         },
-        getCoil: async function(addr, unitID) {
-            const DATA= await modbusStorage.getItem(sede)
-            console.log("Consultando CoilRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA[sede].rtu[unitID].ir[addr])
-            return DATA[sede].rtu[unitID].cr[addr];
+        getCoil: function(addr, unitID) {
+            return new Promise((resolve,reject)=>{
+                try {
+                    const DATA= await modbusStorage.getItem(sede)
+                    console.log("Consultando CoilRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA[sede].rtu[unitID].ir[addr])
+                    return resolve(DATA[sede].rtu[unitID].cr[addr]?true:false)
+                } catch (error) {
+                    reject(error)
+                }
+            })
         },
-        getInputRegister: async function(addr, unitID) {
-            const DATA= await modbusStorage.getItem(sede)
-            console.log("Consultando inputRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA[sede].rtu[unitID].ir[addr])
-            return DATA[sede].rtu[unitID].ir[addr];
+        getInputRegister: function(addr, unitID) {
+            return new Promise((resolve,reject)=>{
+                try {
+                    const DATA= await modbusStorage.getItem(sede)
+                    console.log("Consultando inputRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA[sede].rtu[unitID].ir[addr])
+                    return resolve(Number(DATA[sede].rtu[unitID].ir[addr])?Number(DATA[sede].rtu[unitID].ir[addr]):0);
+                } catch (error) {
+                    return reject(error)
+                }
+            })
         },
         getHoldingRegister: async function(addr, unitID) {
-            const DATA= await modbusStorage.getItem(sede)
-            console.log("Consultando holdingRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA[sede].rtu[unitID].ir[addr])
-            return DATA[sede].rtu[unitID].hr[addr];
+            return new Promise((resolve,reject)=>{
+                try {
+                    const DATA= await modbusStorage.getItem(sede)
+                    console.log("Consultando holdingRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA[sede].rtu[unitID].ir[addr])
+                    return resolve(Number(DATA[sede].rtu[unitID].hr[addr])?Number(DATA[sede].rtu[unitID].hr[addr]):0);
+                } catch (error) {
+                    return reject(error)
+                }
+            })
         },
         getDiscreteInput: async function(addr, unitID) {
-            const DATA= await modbusStorage.getItem(sede)
-            console.log("Consultando coilRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA[sede].rtu[unitID].ir[addr])
-            return DATA[sede].rtu[unitID].dr[addr];
+            return new Promise((resolve,reject)=>{
+                try {
+                    const DATA= await modbusStorage.getItem(sede)
+                    console.log("Consultando coilRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA[sede].rtu[unitID].ir[addr])
+                    return resolve(DATA[sede].rtu[unitID].dr[addr]?true:false);
+                } catch (error) {
+                    return reject(error)
+                }
+            })
         }
     };
     // set the server to answer for modbus requests
