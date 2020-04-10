@@ -152,7 +152,7 @@ function initServerTCP(sede,puerto){
         }
     };
     // set the server to answer for modbus requests
-    var serverTCP = new ModbusRTU.ServerTCP(vector, { host: "0.0.0.0", port:puerto, debug: true });
+    var serverTCP = new ModbusRTU.ServerTCP(vector, { host: "127.0.0.1", port:puerto, debug: true });
     serverTCP.on("initialized", function() {
         console.log(`initialized sede ${sede} en servidor modbus://0.0.0.0:${puerto}`);
     });
