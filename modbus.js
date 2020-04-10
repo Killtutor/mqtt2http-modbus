@@ -107,7 +107,7 @@ function initServerTCP(sede,puerto){
             console.log("Publicando setcoil Message, Dirección: ",addr," Esclavo:",unitID," resultado:",state)
         },
         getCoil: function(addr, unitID) {
-            return new Promise((resolve,reject)=>{
+            return new Promise(async (resolve,reject)=>{
                 try {
                     const DATA= await modbusStorage.getItem(sede)
                     console.log("Consultando CoilRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA[sede].rtu[unitID].ir[addr])
@@ -118,7 +118,7 @@ function initServerTCP(sede,puerto){
             })
         },
         getInputRegister: function(addr, unitID) {
-            return new Promise((resolve,reject)=>{
+            return new Promise(async (resolve,reject)=>{
                 try {
                     const DATA= await modbusStorage.getItem(sede)
                     console.log("Consultando inputRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA[sede].rtu[unitID].ir[addr])
@@ -129,7 +129,7 @@ function initServerTCP(sede,puerto){
             })
         },
         getHoldingRegister: async function(addr, unitID) {
-            return new Promise((resolve,reject)=>{
+            return new Promise(async (resolve,reject)=>{
                 try {
                     const DATA= await modbusStorage.getItem(sede)
                     console.log("Consultando holdingRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA[sede].rtu[unitID].ir[addr])
@@ -140,7 +140,7 @@ function initServerTCP(sede,puerto){
             })
         },
         getDiscreteInput: async function(addr, unitID) {
-            return new Promise((resolve,reject)=>{
+            return new Promise(async (resolve,reject)=>{
                 try {
                     const DATA= await modbusStorage.getItem(sede)
                     console.log("Consultando coilRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA[sede].rtu[unitID].ir[addr])
