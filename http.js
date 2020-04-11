@@ -35,8 +35,8 @@ client.on('message', async function (topic, message) {
         return dummy
     },message.toString())
     console.log(`data optenida ${data} para el topico ${topic} con mensaje ${message.toString()}`)
-    var actual= await HTTPStorage.getItem(sede)
-    await HTTPStorage.setItem(sede,Object.assign(actual,data))
+    var actual= HTTPStorage.getItem(sede)
+    HTTPStorage.setItem(sede,Object.assign(actual,data))
     return 
 })
 
@@ -44,7 +44,7 @@ client.on('message', async function (topic, message) {
 
 const initialize= async()=>{
     //await HTTPStorage.init()
-    var puerto = await HTTPStorage.getItem("lastUsedHTTPPort")
+    var puerto =  HTTPStorage.getItem("lastUsedHTTPPort")
     console.log("Puerto https",puerto)
     ////////// HTTP Functions //////////////
     var app = express()
@@ -60,7 +60,7 @@ const initialize= async()=>{
         //Este Topico es sin la sede! ya la sede la se.. 
         //seria plantaBaja-cuarto1-techo-temperatura
         sede.get('/mqtt/get/:topic', async function (req2, res2) {
-            var DATA = await HTTPStorage.getItem(req.params.sede)
+            var DATA =  HTTPStorage.getItem(req.params.sede)
             const proTopic = req2.params.topic.split("-")
             proTopic.forEach(element => {
                 if (DATA[element]){
@@ -70,10 +70,10 @@ const initialize= async()=>{
             console.info(`Sede: ${req.params.sede}. Transmitiendo data del topico ${req2.params.topic} DATA: ${DATA}`)
             return res2.status(200).send(DATA)
         })
-        var servers = await HTTPStorage.getItem("servers")
+        var servers = HTTPStorage.getItem("servers")
         servers.push(req.params.sede)
         HTTPStorage.setItem("server",servers)
-        var puerto1 = await HTTPStorage.getItem("lastUsedHTTPPort")
+        var puerto1 = HTTPStorage.getItem("lastUsedHTTPPort")
         puerto1+=1
         sede.listen(puerto1, () => {
             console.info(`HTTP sede:${req.params.sede} server escuchando al puerto ${puerto1}`);
@@ -83,7 +83,7 @@ const initialize= async()=>{
 
     app.put('/mqtt/modbus/nuevasede/:sede',async function(req,res){
         console.info(`Registrando nueva sede ${req.params.sede} para modbus`)
-        const puerto = await modbusSubscribe(req.params.sede)
+        const puerto = modbusSubscribe(req.params.sede)
         return res.status(200).json({puerto: puerto})
     })
 
@@ -102,7 +102,7 @@ const initialize= async()=>{
     })
     HTTPStorage.setItem("lastUsedHTTPPort","3000")
 
-    var servers = await HTTPStorage.getItem("servers")
+    var servers = HTTPStorage.getItem("servers")
     servers = servers==undefined ? [] : servers
     if (servers.length>0){
         servers.forEach(async (server)=>{
@@ -114,7 +114,7 @@ const initialize= async()=>{
             //Este Topico es sin la sede! ya la sede la se.. 
             //seria plantaBaja-cuarto1-techo-temperatura
             sede.get('/mqtt/get/:topic', async function (req2, res2) {
-                var DATA = await HTTPStorage.getItem(server)
+                var DATA = HTTPStorage.getItem(server)
                 const proTopic = req2.params.topic.split("-")
                 proTopic.forEach(element => {
                     if (DATA[element]){
@@ -125,7 +125,7 @@ const initialize= async()=>{
                 return res2.status(200).send(DATA)
             })
             
-            var puerto1 = await HTTPStorage.getItem("lastUsedHTTPPort")
+            var puerto1 = HTTPStorage.getItem("lastUsedHTTPPort")
             puerto1+=1
             HTTPStorage.setItem("lastUsedHTTPPort",puerto1)
             sede.listen(puerto1, () => {
