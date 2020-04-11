@@ -1,7 +1,7 @@
 "use strict";
+var nconf = require('nconf');
+nconf.file({ file: './data/modbus.json' });
 
-const Storage = require('node-localstorage').LocalStorage;
-var modbusStorage = new Storage('./data/modbus');
 //MQTT client
 const mqtt = require('mqtt')
 const client  = mqtt.connect('mqtt://127.0.0.1:1883')
@@ -25,24 +25,28 @@ const initialize= async()=>{
         const retype = proTopic[2]==="input"?"ir":proTopic[2]==="holding"?"hr":proTopic[2]==="discrete"?"dr":"cr"
         const addr = parseInt(proTopic[3])
         const context = message.toString();
-        const data = modbusStorage.getItem(sede)
+        const data = nconf.get(sede)
         data.rtu[RTU][retype][addr] = parseInt(context)
-        modbusStorage.setItem(sede, data)
+        nconf.set(sede, data)
         console.info(`recibi topico ${topic}. sede:${sede}, RTU#${RTU}, register:${proTopic[2]}, direccion: ${addr}, data:${parseInt(context)}`)
     })
 
-    var puerto = modbusStorage.getItem("lastUsedPort")
+    var puerto = nconf.get("lastUsedPort")
     if (!puerto){
-        return modbusStorage.setItem("lastUsedPort",8049)
+        console.log("setting lastusedport to ", 8049)
+        nconf.set("lastUsedPort",8049)
+        console.log("result ", nconf.get("lastUsedPort"))
     }else{
-        modbusStorage.forEach(async(dato)=>{
-            if (dato.key!="lastUsedPort" && dato.key!="lastUsedHTTPPort" && dato.value.hasOwnProperty("puerto")){
-                console.log(dato.key)
-                initServerTCP(dato.value.nombre,dato.value.puerto)
-                client.subscribe(`${dato.value.nombre}/#`) 
+        var modbusStorage = nconf.get()
+        Object.keys(modbusStorage).forEach((key)=>{
+            if (key!="lastUsedPort" && key!="lastUsedHTTPPort" && modbusStorage[key].hasOwnProperty("puerto")){
+                console.log(key)
+                initServerTCP(modbusStorage[key].nombre,modbusStorage[key].puerto)
+                client.subscribe(`${modbusStorage[key].nombre}/#`) 
             }
         })
     }
+    nconf.save()
 }
 if (!module.parent) {
     // ran with `node init.js`
@@ -67,14 +71,14 @@ if (!module.parent) {
  */
 exports.subscribeTopicoModbus= async (topico)=>{
     //from DATA to modbusStorage Update
-    modbusStorage.setItem("lastUsedPort",(parseInt(modbusStorage.getItem("lastUsedPort"))+1))
+    nconf.set("lastUsedPort",(parseInt(nconf.get("lastUsedPort"))+1))
     const DATA = {}
-    DATA[topico]={nombre:topico,puerto:parseInt(modbusStorage.getItem("lastUsedPort")),rtu:[]}
-    //console.log(DATA)
+    DATA[topico]={nombre:topico,puerto:parseInt(nconf.get("lastUsedPort")),rtu:[]}
     DATA[topico].rtu= new Array(256).fill({ir:[0],hr:[0],dr:[0],cr:[]})
-    modbusStorage.setItem(topico,DATA[topico])
+    nconf.set(topico,DATA[topico])
     initServerTCP(DATA[topico].nombre,DATA[topico].puerto)
     client.subscribe(`${topico}/#`)
+    nconf.save()
     return DATA[topico].puerto
 }
 
@@ -86,8 +90,11 @@ exports.subscribeTopicoModbus= async (topico)=>{
  */
 exports.sedePuertoConfig=()=>{
     var retrieve= {}
-    modbusStorage.forEach(async (dato)=>{
-        retrieve[dato.key]={nombre:dato.value.nombre,puerto:dato.value.puerto}
+    var modbusStorage = nconf.get()
+    Object.keys(modbusStorage).forEach((key)=>{
+        if (key!="lastUsedPort" && key!="lastUsedHTTPPort" && modbusStorage[key].hasOwnProperty("puerto")){
+           retrieve[key]=modbusStorage[key]
+        }
     })
     return retrieve
 }
@@ -114,7 +121,7 @@ function initServerTCP(sede,puerto){
         getCoil: function(addr, unitID) {
             return new Promise(async (resolve)=>{
                 try {
-                    const DATA= modbusStorage.getItem(sede)
+                    const DATA= nconf.get(sede)
                     console.log("Consultando CoilRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA.rtu[unitID].ir[addr])
                     return resolve(DATA.rtu[unitID].cr[addr]?true:false)
                 } catch (error) {resolve(false)
@@ -126,7 +133,7 @@ function initServerTCP(sede,puerto){
             return new Promise(async (resolve)=>{
                 try {
                     console.log("Consultando inputRegister, Dirección: ",addr," Esclavo:",unitID," resultado:")
-                    const DATA= modbusStorage.getItem(sede)
+                    const DATA= nconf.get(sede)
                     return resolve(Number(DATA.rtu[unitID].ir[addr])?Number(DATA.rtu[unitID].ir[addr]):0);
                 } catch (error) {resolve(0)
                     return console.error(error)
@@ -136,7 +143,7 @@ function initServerTCP(sede,puerto){
         getHoldingRegister: async function(addr, unitID) {
             return new Promise(async (resolve)=>{
                 try {
-                    const DATA= modbusStorage.getItem(sede)
+                    const DATA= nconf.get(sede)
                     console.log("Consultando holdingRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA.rtu[unitID].ir[addr])
                     return resolve(Number(DATA.rtu[unitID].hr[addr])?Number(DATA.rtu[unitID].hr[addr]):0);
                 } catch (error) {
@@ -148,7 +155,7 @@ function initServerTCP(sede,puerto){
         getDiscreteInput: async function(addr, unitID) {
             return new Promise(async (resolve)=>{
                 try {
-                    const DATA= modbusStorage.getItem(sede)
+                    const DATA= nconf.get(sede)
                     console.log("Consultando coilRegister, Dirección: ",addr," Esclavo:",unitID," resultado:",DATA.rtu[unitID].ir[addr])
                     return resolve(DATA.rtu[unitID].dr[addr]?true:false);
                 } catch (error) {

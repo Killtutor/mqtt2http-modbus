@@ -1,7 +1,7 @@
 "use strict";
 
-const storage = require('node-localstorage').LocalStorage;
-var HTTPStorage = new storage("data/http")
+var nconf = require('nconf');
+nconf.file({ file: '/data/http.json' });
 
 ////////// HTTP Dependencies //////////////
 const express = require('express')
@@ -35,8 +35,8 @@ client.on('message', async function (topic, message) {
         return dummy
     },message.toString())
     console.log(`data optenida ${data} para el topico ${topic} con mensaje ${message.toString()}`)
-    var actual= HTTPStorage.getItem(sede)
-    HTTPStorage.setItem(sede,Object.assign(actual,data))
+    var actual= nconf.get(sede)
+    nconf.set(sede,Object.assign(actual,data))
     return 
 })
 
@@ -44,7 +44,7 @@ client.on('message', async function (topic, message) {
 
 const initialize= async()=>{
     //await HTTPStorage.init()
-    var puerto =  HTTPStorage.getItem("lastUsedHTTPPort")
+    var puerto =  nconf.get("lastUsedHTTPPort")
     console.log("Puerto https",puerto)
     ////////// HTTP Functions //////////////
     var app = express()
@@ -60,7 +60,7 @@ const initialize= async()=>{
         //Este Topico es sin la sede! ya la sede la se.. 
         //seria plantaBaja-cuarto1-techo-temperatura
         sede.get('/mqtt/get/:topic', async function (req2, res2) {
-            var DATA =  HTTPStorage.getItem(req.params.sede)
+            var DATA =  nconf.get(req.params.sede)
             const proTopic = req2.params.topic.split("-")
             proTopic.forEach(element => {
                 if (DATA[element]){
@@ -70,10 +70,10 @@ const initialize= async()=>{
             console.info(`Sede: ${req.params.sede}. Transmitiendo data del topico ${req2.params.topic} DATA: ${DATA}`)
             return res2.status(200).send(DATA)
         })
-        var servers = HTTPStorage.getItem("servers")
+        var servers = nconf.get("servers")
         servers.push(req.params.sede)
-        HTTPStorage.setItem("server",servers)
-        var puerto1 = HTTPStorage.getItem("lastUsedHTTPPort")
+        nconf.set("server",servers)
+        var puerto1 = nconf.get("lastUsedHTTPPort")
         puerto1+=1
         sede.listen(puerto1, () => {
             console.info(`HTTP sede:${req.params.sede} server escuchando al puerto ${puerto1}`);
@@ -100,9 +100,9 @@ const initialize= async()=>{
     app.listen(3000, () => {
         console.info(`HTTP Control server escuchando al puerto 3000`);
     })
-    HTTPStorage.setItem("lastUsedHTTPPort","3000")
+    nconf.set("lastUsedHTTPPort","3000")
 
-    var servers = HTTPStorage.getItem("servers")
+    var servers = nconf.get("servers")
     servers = servers==undefined ? [] : servers
     if (servers.length>0){
         servers.forEach(async (server)=>{
@@ -114,7 +114,7 @@ const initialize= async()=>{
             //Este Topico es sin la sede! ya la sede la se.. 
             //seria plantaBaja-cuarto1-techo-temperatura
             sede.get('/mqtt/get/:topic', async function (req2, res2) {
-                var DATA = HTTPStorage.getItem(server)
+                var DATA = nconf.get(server)
                 const proTopic = req2.params.topic.split("-")
                 proTopic.forEach(element => {
                     if (DATA[element]){
@@ -125,9 +125,9 @@ const initialize= async()=>{
                 return res2.status(200).send(DATA)
             })
             
-            var puerto1 = HTTPStorage.getItem("lastUsedHTTPPort")
+            var puerto1 = nconf.get("lastUsedHTTPPort")
             puerto1+=1
-            HTTPStorage.setItem("lastUsedHTTPPort",puerto1)
+            nconf.set("lastUsedHTTPPort",puerto1)
             sede.listen(puerto1, () => {
                 console.info(`HTTP sede:${server} server escuchando al puerto ${puerto1}`);
             })
