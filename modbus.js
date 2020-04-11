@@ -6,19 +6,14 @@ nconf.file({ file: './data/modbus.json' });
 const mqtt = require('mqtt')
 const client  = mqtt.connect('mqtt://127.0.0.1:1883')
 
-// Init Function, Runs once on server livespan
-const initialize= async()=>{
-    //init modbus storage 
-    //await modbusStorage.init()
-
-    
-    client.on('connect', function () {
+client.on('connect', function () {
         console.info("Modbus Conectado al broker. Subscribite con http para empezar a escuchar")
     })
         
     //formato esperado de topico: sede/RTU#/retype/addr#
     //retype could be input, coil, holding, discrete
-    client.on('message', async function (topic, message) {
+client.on('message', function (topic, message){
+	console.log("Mensaje Recibido")
         const proTopic = topic.split("/")
         const sede = proTopic[0]
         const RTU = parseInt(proTopic[1])
@@ -28,8 +23,13 @@ const initialize= async()=>{
         const data = nconf.get(sede)
         data.rtu[RTU][retype][addr] = parseInt(context)
         nconf.set(sede, data)
+	nconf.save()
         console.info(`recibi topico ${topic}. sede:${sede}, RTU#${RTU}, register:${proTopic[2]}, direccion: ${addr}, data:${parseInt(context)}`)
     })
+// Init Function, Runs once on server livespan
+const initialize= ()=>{
+    //init modbus storage 
+    //await modbusStorage.init()
 
     var puerto = nconf.get("lastUsedPort")
     if (!puerto){
