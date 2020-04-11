@@ -1,6 +1,7 @@
 "use strict";
-const storage = require('node-persist');
-var HTTPStorage = storage.create({dir:"data/http"})
+
+const storage = require('node-localstorage').LocalStorage;
+var HTTPStorage = new storage("data/http")
 
 ////////// HTTP Dependencies //////////////
 const express = require('express')
@@ -42,7 +43,7 @@ client.on('message', async function (topic, message) {
 
 
 const initialize= async()=>{
-    await HTTPStorage.init()
+    //await HTTPStorage.init()
     var puerto = await HTTPStorage.getItem("lastUsedHTTPPort")
     console.log("Puerto https",puerto)
     ////////// HTTP Functions //////////////

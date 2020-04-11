@@ -1,11 +1,11 @@
 "use strict";
 
-const Storage = require('node-persist');
-var modbusStorage = Storage.create({dir:"data/modbus"})
+const Storage = require('node-localstorage').LocalStorage;
+var modbusStorage = new Storage('./data/modbus');
 // Init Function, Runs once on server livespan
 const initialize= async()=>{
     //init modbus storage 
-    await modbusStorage.init()
+    //await modbusStorage.init()
 
     //MQTT client
     const mqtt = require('mqtt')
