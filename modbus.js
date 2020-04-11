@@ -2,15 +2,16 @@
 
 const Storage = require('node-localstorage').LocalStorage;
 var modbusStorage = new Storage('./data/modbus');
+//MQTT client
+const mqtt = require('mqtt')
+const client  = mqtt.connect('mqtt://127.0.0.1:1883')
+
 // Init Function, Runs once on server livespan
 const initialize= async()=>{
     //init modbus storage 
     //await modbusStorage.init()
 
-    //MQTT client
-    const mqtt = require('mqtt')
-    const client  = mqtt.connect('mqtt://127.0.0.1:1883')
-
+    
     client.on('connect', function () {
         console.info("Modbus Conectado al broker. Subscribite con http para empezar a escuchar")
     })
