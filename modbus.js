@@ -1,14 +1,11 @@
 "use strict";
 //MQTT client
 const mqtt = require('mqtt')
-var client  = undefined
+var client= mqtt.connect('mqtt://127.0.0.1:1883')
 var DATA ={"lastUsedPort":8049}
 const fs = require("fs")
-
-// Init Function, Runs once on server livespan
-const initialize= ()=>{
-    //Conectandome al Broker
-    client= mqtt.connect('mqtt://127.0.0.1:1883')
+//Conectandome al Broker
+    
     client.on('connect', function () {
         console.info("Modbus Conectado al broker. Subscribite con http para empezar a escuchar")
     })
@@ -28,6 +25,9 @@ const initialize= ()=>{
         DATA[sede]= data
 	    console.info(`recibi topico ${topic}. sede:${sede}, RTU#${RTU}, register:${proTopic[2]}, direccion: ${addr}, data:${parseInt(context)}`)
     })
+// Init Function, Runs once on server livespan
+const initialize= ()=>{
+    
 
     DATA = JSON.parse(fs.readFileSync("./data/modbus.json"))
 
