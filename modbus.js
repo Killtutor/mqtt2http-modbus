@@ -1,73 +1,234 @@
 "use strict";
-//MQTT client
+// MQTT import and clientConfig
 const mqtt = require("mqtt");
-var client = mqtt.connect("mqtt://127.0.0.1:1883");
-var DATA = { lastUsedPort: 8049 };
-const fs = require("fs");
+const config = require("./config.json");
+const client = mqtt.connect(`mqtt://${config.mqttHost}:${config.mqttPort}`, {
+  password: config.mqttPass,
+  username: config.mqttUser
+});
 
+client.on("connect", function () {
+  console.info(
+    "Modbus Conectado al broker. Subscrito a la configuracion inicial, para mas topicos usa el http server."
+  );
+});
+
+const httpTemplates = {
+  binary: {
+    dataType: "BINARY",
+    binary0Value: "",
+    parameterName: "binario"
+  },
+  numeric: {
+    dataType: "NUMERIC",
+    binary0Value: "",
+    parameterName: "numerico"
+  },
+  alpha: {
+    dataType: "ALPHANUMERIC",
+    binary0Value: "",
+    parameterName: "alpha"
+  },
+  multi: {
+    dataType: "MULTISTATE",
+    binary0Value: "",
+    parameterName: "multi"
+  }
+};
+
+// REDIS import and Client Config
+const { createClient } = require("redis");
+const redis = createClient({
+  url: config.redisUrl,
+  name: "Modbus",
+  // username: config.redisUser,
+  password: config.redisPass
+});
+redis.on("error", (err) => console.log("Redis Client Error", err));
+redis.connect();
+
+const { writeFile } = require("fs/promises");
+
+// Modbus retType translator
 const retTypeTranslator = {
   input: "ir",
   holding: "hr",
   discrete: "dr",
   coil: "cr"
 };
-//Conectandome al Broker
-
-client.on("connect", function () {
-  console.info(
-    "Modbus Conectado al broker. Subscribite con http para empezar a escuchar"
-  );
-});
 
 //formato esperado de topico: sede/RTU#/retype/addr#
 //retype could be input, coil, holding, discrete
-client.on("message", function (topic, message) {
-  console.log("Mensaje Recibido");
+client.on("message", async function (topic, message) {
   const proTopic = topic.split("/");
   const sede = proTopic[0];
   const RTU = parseInt(proTopic[1]);
   const retype = retTypeTranslator[proTopic[2]] ?? "ir";
-  const addr = parseInt(proTopic[3]);
-  const context = message.toString();
-  const data = DATA[sede];
-  data.rtu[RTU][retype][addr] = parseInt(context);
-  DATA[sede] = data;
-  console.info(
-    `recibi topico ${topic}. sede:${sede}, RTU#${RTU}, register:${
-      proTopic[2]
-    }, direccion: ${addr}, data:${parseInt(context)}`
-  );
+  const addr = proTopic[3];
+  const context = message.toString("utf8");
+  await redis.set(`${sede}/rtu/${RTU}/${retype}/${addr}`, String(context));
 });
 // Init Function, Runs once on server livespan
-const initialize = () => {
-  DATA = JSON.parse(fs.readFileSync("./data/modbus.json"));
-
-  var puerto = DATA["lastUsedPort"];
-  if (!puerto) {
-    DATA["lastUsedPort"] = 8049;
-  } else {
-    Object.keys(DATA).forEach((key) => {
-      if (
-        key != "lastUsedPort" &&
-        key != "lastUsedHTTPPort" &&
-        DATA[key].hasOwnProperty("puerto")
-      ) {
-        console.log(key);
-        initServerTCP(DATA[key].nombre, DATA[key].puerto);
-        client.subscribe(`${DATA[key].nombre}/#`);
-      }
+const initialize = async () => {
+  const exportData = { dataSources: [], dataPoints: [] };
+  for (const sede of config.modbusSedes) {
+    initServerTCP(sede.nombre, sede.port);
+    const dataSourceId = `DS_${(Math.random() * 100000).toFixed(0)}`;
+    exportData.dataSources.push({
+      xid: dataSourceId,
+      type: "MODBUS_IP",
+      alarmLevels: {
+        POINT_WRITE_EXCEPTION: "URGENT",
+        DATA_SOURCE_EXCEPTION: "URGENT",
+        POINT_READ_EXCEPTION: "URGENT"
+      },
+      updatePeriodType: sede.refreshRatePeriod,
+      transportType: "TCP",
+      contiguousBatches: false,
+      createSlaveMonitorPoints: false,
+      enabled: true,
+      encapsulated: false,
+      host: "mqtt",
+      maxReadBitCount: 2000,
+      maxReadRegisterCount: 125,
+      maxWriteRegisterCount: 120,
+      name: sede.nombre,
+      port: sede.port,
+      quantize: false,
+      retries: 2,
+      timeout: 500,
+      updatePeriods: sede.refreshRate
     });
+    for (let i = 0; i < sede.rtus; i++) {
+      exportData.dataPoints.push({
+        xid: `DP_${(Math.random() * 100000).toFixed(0)}`,
+        loggingType: "NONE",
+        intervalLoggingPeriodType: "MINUTES",
+        intervalLoggingType: "INSTANT",
+        purgeType: "YEARS",
+        pointLocator: {
+          range: "COIL_STATUS",
+          modbusDataType: "BINARY",
+          additive: 0.0,
+          bit: 0,
+          charset: "ASCII",
+          multiplier: 1.0,
+          offset: i,
+          registerCount: 0,
+          settableOverride: true,
+          slaveId: 1,
+          slaveMonitor: false
+        },
+        eventDetectors: [],
+        engineeringUnits: "",
+        chartColour: null,
+        chartRenderer: null,
+        dataSourceXid: dataSourceId,
+        defaultCacheSize: 1,
+        deviceName: sede.nombre,
+        discardExtremeValues: false,
+        discardHighLimit: 1.7976931348623157e308,
+        discardLowLimit: -1.7976931348623157e308,
+        enabled: true,
+        intervalLoggingPeriod: 15,
+        name: `${sede.nombre}-coils-${i}`,
+        purgePeriod: 1,
+        textRenderer: {
+          type: "PLAIN",
+          suffix: ""
+        },
+        tolerance: 0.0
+      });
+      exportData.dataPoints.push({
+        xid: `DP_${(Math.random() * 100000).toFixed(0)}`,
+        loggingType: "NONE",
+        intervalLoggingPeriodType: "MINUTES",
+        intervalLoggingType: "INSTANT",
+        purgeType: "YEARS",
+        pointLocator: {
+          range: "HOLDING_REGISTER",
+          modbusDataType: "TWO_BYTE_INT_SIGNED",
+          additive: 0.0,
+          bit: 0,
+          charset: "ASCII",
+          multiplier: 1.0,
+          offset: i,
+          registerCount: 0,
+          settableOverride: true,
+          slaveId: 1,
+          slaveMonitor: false
+        },
+        eventDetectors: [],
+        engineeringUnits: "",
+        chartColour: null,
+        chartRenderer: null,
+        dataSourceXid: dataSourceId,
+        defaultCacheSize: 1,
+        deviceName: sede.nombre,
+        discardExtremeValues: false,
+        discardHighLimit: 1.7976931348623157e308,
+        discardLowLimit: -1.7976931348623157e308,
+        enabled: true,
+        intervalLoggingPeriod: 15,
+        name: `${sede.nombre}-holding-${i}`,
+        purgePeriod: 1,
+        textRenderer: {
+          type: "PLAIN",
+          suffix: ""
+        },
+        tolerance: 0.0
+      });
+    }
+    await redis.set("lastUsedPort", String(sede.port));
+
+    client.subscribe(`${sede.nombre}/#`);
   }
+  for (const http of config.httpRealTime.devices) {
+    const dataSourceId = `DS_${(Math.random() * 100000).toFixed(0)}`;
+    exportData.dataSources.push({
+      xid: dataSourceId,
+      type: "HTTP_RECEIVER",
+      deviceIdWhiteList: ["mqtt", http.nombre],
+      enabled: true,
+      ipWhiteList: ["*.*.*.*"],
+      name: http.nombre
+    });
+    for (const point of http.points) {
+      exportData.dataPoints.push({
+        xid: `DP_${(Math.random() * 100000).toFixed(0)}`,
+        dataSourceXid: dataSourceId,
+        name: point.name,
+        deviceName: http.nombre,
+        pointLocator: httpTemplates[point.type],
+        loggingType: "NONE",
+        intervalLoggingPeriodType: "MINUTES",
+        intervalLoggingType: "INSTANT",
+        purgeType: "YEARS",
+        eventDetectors: [],
+        engineeringUnits: "",
+        chartColour: null,
+        chartRenderer: null,
+        defaultCacheSize: 1,
+        discardExtremeValues: false,
+        discardHighLimit: 1.7976931348623157e308,
+        discardLowLimit: -1.7976931348623157e308,
+        enabled: true,
+        intervalLoggingPeriod: 15,
+        purgePeriod: 1,
+        textRenderer: {
+          type: "PLAIN",
+          suffix: ""
+        },
+        tolerance: 0.0
+      });
+    }
+  }
+  writeFile("importThisInVemetris.json", JSON.stringify(exportData));
 };
 if (require.main === module) {
   // ran with `node init.js`
   initialize();
 }
-//exports.initOrReInit = initialize
-//En este objeto se guardará toda la info necesaria (sera el buffer de nuestro gateway mqtt-modbus)
-//var DATA = {lastUsedPort:8049}
-//ejplo objetio dentro de data
-//ejemplo={nombre:"ejemplo",puerto:"8020",rtu:[{ir:[],dr:[],hr:[]},{}]}
 
 /////////////////////////////////////////////////////////////////////
 /////////////           Aqui comienza Modbus              ///////////
@@ -79,45 +240,17 @@ if (require.main === module) {
  * @returns integer devuelve el puerto q se creo para esa sede
  * @public
  */
-exports.subscribeTopicoModbus = (topico) => {
-  //from DATA to modbusStorage Update
-  DATA["lastUsedPort"] = parseInt(DATA["lastUsedPort"]) + 1;
-  DATA[topico] = {
+exports.subscribeTopicoModbus = async (topico) => {
+  redis.incrBy("lastUsedPort", 1);
+  const puerto = Number(await redis.get("lasUsedPort"));
+  const data = {
     nombre: topico,
-    puerto: parseInt(DATA["lastUsedPort"]),
-    rtu: []
+    puerto,
+    rtu: new Array(256).fill({ ir: [], hr: [], dr: [], cr: [] })
   };
-  DATA[topico].rtu = new Array(256).fill({ ir: [], hr: [], dr: [], cr: [] });
-  initServerTCP(DATA[topico].nombre, DATA[topico].puerto);
+  initServerTCP(topico, puerto);
   client.subscribe(`${topico}/#`);
-  fs.writeFile("./data/modbus.json", JSON.stringify(DATA), (error) => {
-    if (error) {
-      return console.error(`Error guardando archivo, ${error}`);
-    }
-    console.log("guardado exitoso");
-  });
-  return DATA[topico].puerto;
-};
-
-/**
- * devuelve la data de sedes y puertos
- *
- * @returns array diferentes sedes con sus puertos asignados
- * @public
- */
-exports.sedePuertoConfig = () => {
-  var retrieve = {};
-  var modbusStorage = DATA;
-  Object.keys(modbusStorage).forEach((key) => {
-    if (
-      key != "lastUsedPort" &&
-      key != "lastUsedHTTPPort" &&
-      modbusStorage[key].hasOwnProperty("puerto")
-    ) {
-      retrieve[key] = modbusStorage[key];
-    }
-  });
-  return retrieve;
+  return data;
 };
 
 /**
@@ -132,38 +265,18 @@ function initServerTCP(sede, puerto) {
   var vector = {
     setRegister: function (addr, value, unitID) {
       client.publish(`${sede}/${unitID}/setcoil/${addr}`, value);
-      console.log(
-        "Publicando setRegister Message, Dirección: ",
-        addr,
-        " Esclavo:",
-        unitID,
-        " resultado:",
-        value
-      );
     },
     setCoil: function (addr, state, unitID) {
       client.publish(`${sede}/${unitID}/setcoil/${addr}`, state);
-      console.log(
-        "Publicando setcoil Message, Dirección: ",
-        addr,
-        " Esclavo:",
-        unitID,
-        " resultado:",
-        state
-      );
     },
     getCoil: function (addr, unitID) {
       return new Promise(async (resolve) => {
         try {
-          console.log(
-            "Consultando CoilRegister, Dirección: ",
-            addr,
-            " Esclavo:",
-            unitID,
-            " resultado:",
-            DATA[sede].rtu[unitID].ir[addr]
+          const coilData = Number(
+            await redis.get(`${sede}/rtu/${unitID}/cr/${addr}`)
           );
-          return resolve(DATA[sede].rtu[unitID].cr[addr] ? true : false);
+
+          return resolve(coilData > 0 ? true : false);
         } catch (error) {
           resolve(false);
           console.error(error);
@@ -173,19 +286,8 @@ function initServerTCP(sede, puerto) {
     getInputRegister: function (addr, unitID) {
       return new Promise(async (resolve) => {
         try {
-          console.log(
-            "Consultando inputRegister, Dirección: ",
-            addr,
-            " Esclavo:",
-            unitID,
-            " resultado:",
-            DATA[sede].rtu[unitID].ir[addr]
-          );
-          return resolve(
-            Number(DATA[sede].rtu[unitID].ir[addr])
-              ? Number(DATA[sede].rtu[unitID].ir[addr])
-              : 0
-          );
+          const inputData = await redis.get(`${sede}/rtu/${unitID}/ir/${addr}`);
+          return resolve(inputData ? Number(inputData) : 0);
         } catch (error) {
           resolve(0);
           return console.error(error);
@@ -195,19 +297,13 @@ function initServerTCP(sede, puerto) {
     getHoldingRegister: async function (addr, unitID) {
       return new Promise(async (resolve) => {
         try {
-          console.log(
-            "Consultando holdingRegister, Dirección: ",
-            addr,
-            " Esclavo:",
-            unitID,
-            " resultado:",
-            DATA[sede].rtu[unitID].ir[addr]
+          const holdingData = await redis.get(
+            `${sede}/rtu/${unitID}/hr/${addr}`
           );
-          return resolve(
-            Number(DATA[sede].rtu[unitID].hr[addr])
-              ? Number(DATA[sede].rtu[unitID].hr[addr])
-              : 0
-          );
+          const toSend = holdingData
+            ? Number(Number(holdingData).toFixed(0))
+            : 0;
+          return resolve(toSend);
         } catch (error) {
           resolve(0);
           return console.error(error);
@@ -217,15 +313,10 @@ function initServerTCP(sede, puerto) {
     getDiscreteInput: async function (addr, unitID) {
       return new Promise(async (resolve) => {
         try {
-          console.log(
-            "Consultando coilRegister, Dirección: ",
-            addr,
-            " Esclavo:",
-            unitID,
-            " resultado:",
-            DATA[sede].rtu[unitID].ir[addr]
+          const discreteInput = Number(
+            await redis.get(`${sede}/rtu/${unitID}/dr/${addr}`)
           );
-          return resolve(DATA[sede].rtu[unitID].dr[addr] ? true : false);
+          return resolve(discreteInput > 0 ? true : false);
         } catch (error) {
           resolve(false);
           return console.error(error);
