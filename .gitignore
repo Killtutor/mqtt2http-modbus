@@ -3,6 +3,9 @@
 ./tomcat/ROOT/*
 ./tomcat/ROOT
 **/ROOT/*
+**/*.pem
+**/*.key
+**/*.csr
 .vscode
 data
 package-lock.json

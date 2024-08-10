@@ -1,0 +1,31 @@
+{
+  "name": "mqttohttp",
+  "version": "0.0.1",
+  "description": "server than can convert mqtt protocol to http",
+  "main": "init.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon init.js"
+  },
+  "author": "Agustin Negrin",
+  "license": "ISC",
+  "dependencies": {
+    "aedes": "^0.51.1",
+    "aedes-stats": "^4.0.0",
+    "axios": "^1.7.2",
+    "body-parser": "^1.20.2",
+    "dayjs": "^1.11.12",
+    "express": "^4.19.2",
+    "modbus-serial": "^8.0.17",
+    "mqtt": "^5.7.0",
+    "nconf": "^0.12.1",
+    "node-localstorage": "^3.0.5",
+    "redis": "^4.6.15"
+  },
+  "engines": {
+    "node": "^20"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.3"
+  }
+}

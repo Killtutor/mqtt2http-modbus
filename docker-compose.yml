@@ -1,0 +1,124 @@
+services:
+  # traefik:
+  #   image: "traefik:v3.0.3"
+  #   container_name: "traefik-vemetris"
+  #   command:
+  #     - "--log.level=DEBUG"
+  #     - "--api=true"
+  #     - "--api.insecure=true"
+  #     - "--providers.docker=true"
+  #     - "--entrypoints.web.address=:80"
+  #     - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+  #     - "--entrypoints.websecure.address=:443"
+  #     - "--providers.docker.exposedbydefault=true"
+  #     - "--certificatesresolvers.le.acme.tlschallenge=true"
+  #     - "--certificatesresolvers.le.acme.email=dev@vemetris.com"
+  #     - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #     - "8080:8080"
+  #   volumes:
+  #     - "./letsencrypt:/letsencrypt"
+  #     - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+  sql-db:
+    environment:
+      - MYSQL_ROOT_PASSWORD
+    build:
+      context: ./mariadb
+    image: maria-db
+    container_name: maria-db
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    mem_limit: 3g
+    # volumes:
+    #   - type: bind
+    #     source: ./mariadb/my.cnf
+    #     target: /root/my.cnf
+    memswap_limit: -1
+    mem_swappiness: 20
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      vemetris:
+        aliases:
+          - db
+
+  tomcat:
+    build:
+      context: ./tomcat
+    image: tomcat
+    container_name: tomcat-vemetris
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "8000:8000"
+    mem_limit: 3g
+    memswap_limit: -1
+    mem_swappiness: 20
+    healthcheck:
+      test: ["CMD", "bash", "/healthCheck.sh"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      vemetris:
+        aliases:
+          - tomcat
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.http.routers.vemetris.rule=Host(`demo.vemetris.com`)"
+    #   - "traefik.port=80"
+    #   - "traefik.http.routers.vemetris.entrypoints=websecure"
+    #   - "traefik.http.routers.vemetris.tls.certresolver=le"
+
+    depends_on:
+      sql-db:
+        condition: service_healthy
+
+  mqtt-modbus:
+    build:
+      context: ./mqtt_modbus
+    image: mqtt
+    container_name: mqtt-modbus
+    restart: unless-stopped
+    mem_limit: 3g
+    memswap_limit: -1
+    mem_swappiness: 20
+    depends_on:
+      tomcat:
+        condition: service_healthy
+
+    networks:
+      vemetris:
+        aliases:
+          - mqtt
+
+  redis:
+    image: redis:bookworm
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - mqttData:/data
+    # depends_on:
+    #   - traefik
+    networks:
+      vemetris:
+        aliases:
+          - redis
+
+networks:
+  vemetris:
+
+volumes:
+  mqttData:
