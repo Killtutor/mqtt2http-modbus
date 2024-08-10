@@ -1,4 +1,8 @@
-node_modules
+./mqtt_modbus/module/node_modules
+**/node_modules/*
+./tomcat/ROOT/*
+./tomcat/ROOT
+**/ROOT/*
 .vscode
 data
 package-lock.json
