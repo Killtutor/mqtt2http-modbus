@@ -24,7 +24,7 @@ const redis = createClient({
   url: config.redisUrl,
   name: "Modbus",
   // username: config.redisUser,
-  password: config.redisPass
+  password: process.env.REDIS_PASSWORD || config.redisPass
 });
 redis.on("error", (err) => console.log("Redis Client Error", err));
 redis.connect();

@@ -63,6 +63,7 @@ services:
       - MQTT_HOST=127.0.0.1
       - MQTT_USER=Remota
       - MQTT_PASS=${MQTT_PASS}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     ports:
       # This is the port for the mqtt broker
       - "1883:1883"
