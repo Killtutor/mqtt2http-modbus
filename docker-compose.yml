@@ -1,28 +1,4 @@
 services:
-  # traefik:
-  #   image: "traefik:v3.0.3"
-  #   container_name: "traefik-vemetris"
-  #   command:
-  #     - "--log.level=DEBUG"
-  #     - "--api=true"
-  #     - "--api.insecure=true"
-  #     - "--providers.docker=true"
-  #     - "--entrypoints.web.address=:80"
-  #     - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-  #     - "--entrypoints.websecure.address=:443"
-  #     - "--providers.docker.exposedbydefault=true"
-  #     - "--certificatesresolvers.le.acme.tlschallenge=true"
-  #     - "--certificatesresolvers.le.acme.email=dev@vemetris.com"
-  #     - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
-  #   restart: unless-stopped
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #     - "8080:8080"
-  #   volumes:
-  #     - "./letsencrypt:/letsencrypt"
-  #     - "/var/run/docker.sock:/var/run/docker.sock:ro"
-
   sql-db:
     environment:
       - MYSQL_ROOT_PASSWORD
@@ -34,10 +10,8 @@ services:
     ports:
       - "3306:3306"
     mem_limit: 3g
-    # volumes:
-    #   - type: bind
-    #     source: ./mariadb/my.cnf
-    #     target: /root/my.cnf
+    labels:
+      - "traefik.enable=false"
     memswap_limit: -1
     mem_swappiness: 20
     healthcheck:
@@ -63,6 +37,12 @@ services:
     mem_limit: 3g
     memswap_limit: -1
     mem_swappiness: 20
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mqtt2http-modbus.rule=Host(`tesis.kriollotech.com`)"
+      - "traefik.port=8080"
+      - "traefik.http.routers.mqtt2http-modbus.entrypoints=websecure"
+      - "traefik.http.routers.mqtt2http-modbus.tls.certresolver=le"
     healthcheck:
       test: ["CMD", "bash", "/healthCheck.sh"]
       start_period: 10s
@@ -73,18 +53,33 @@ services:
       vemetris:
         aliases:
           - tomcat
-    # labels:
-    #   - "traefik.enable=true"
-    #   - "traefik.http.routers.vemetris.rule=Host(`demo.vemetris.com`)"
-    #   - "traefik.port=80"
-    #   - "traefik.http.routers.vemetris.entrypoints=websecure"
-    #   - "traefik.http.routers.vemetris.tls.certresolver=le"
-
     depends_on:
       sql-db:
         condition: service_healthy
 
   mqtt-modbus:
+    environment:
+      - MQTT_PORT=1883
+      - MQTT_HOST=127.0.0.1
+      - MQTT_USER=Remota
+      - MQTT_PASS=${MQTT_PASS}
+    ports:
+      # This is the port for the mqtt broker
+      - "1883:1883"
+      # These are the ports for the http server
+      - "3001:3001"
+      # These are the ports for the modbus slaves include more as needed
+      - "8030:8030"
+      - "8031:8031"
+      - "8032:8032"
+      - "8033:8033"
+      - "8034:8034"
+      - "8035:8035"
+      - "8036:8036"
+      - "8037:8037"
+      - "8038:8038"
+      - "8039:8039"
+      - "8040:8040"
     build:
       context: ./mqtt_modbus
     image: mqtt
@@ -93,10 +88,17 @@ services:
     mem_limit: 3g
     memswap_limit: -1
     mem_swappiness: 20
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mqtt.rule=Host(`mqtt.api.kriollotech.com`)"
+      - "traefik.port=1883"
+      - "traefik.http.routers.mqtt.entrypoints=websecure"
+      - "traefik.http.routers.mqtt.tls.certresolver=le"
+
     depends_on:
+      redis:
       tomcat:
         condition: service_healthy
-
     networks:
       vemetris:
         aliases:
@@ -104,6 +106,8 @@ services:
 
   redis:
     image: redis:bookworm
+    labels:
+      - "traefik.enable=false"
     restart: always
     ports:
       - "6379:6379"

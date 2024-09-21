@@ -7,6 +7,6 @@ COPY ./module /mqtt-modbus
 WORKDIR /mqtt-modbus
 
 # Actualizar lista de paquetes e instalar paquetes necesarios
-RUN npm install
+RUN yarn install
 
 CMD ["yarn", "start"]

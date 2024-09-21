@@ -96,7 +96,9 @@ async function toTheFail(client) {
 if (require.main === module) {
   if (Boolean(config.testEnabled)) {
     const client = mqtt.connect(
-      `mqtt://${config.mqttHost}:${config.mqttPort}`,
+      `mqtt://${process.env.MQTT_HOST || config.mqttHost}:${
+        process.env.MQTT_PORT || config.mqttPort
+      }`,
       {
         password: config.mqttPass,
         username: config.mqttUser

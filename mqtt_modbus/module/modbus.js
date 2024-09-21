@@ -2,10 +2,15 @@
 // MQTT import and clientConfig
 const mqtt = require("mqtt");
 const config = require("./config.json");
-const client = mqtt.connect(`mqtt://${config.mqttHost}:${config.mqttPort}`, {
-  password: config.mqttPass,
-  username: config.mqttUser
-});
+const client = mqtt.connect(
+  `mqtt://${process.env.MQTT_HOST || config.mqttHost}:${
+    process.env.MQTT_PORT || config.mqttPort
+  }`,
+  {
+    password: process.env.MQTT_PASS || config.mqttPass,
+    username: process.env.MQTT_USER || config.mqttUser
+  }
+);
 
 client.on("connect", function () {
   console.info(

@@ -11,10 +11,12 @@ const { setTimeout } = require("timers/promises");
 async function runTestData(params) {
   if (Boolean(config.testEnabled)) {
     const client = mqtt.connect(
-      `mqtt://${config.mqttHost}:${config.mqttPort}`,
+      `mqtt://${process.env.MQTT_HOST || config.mqttHost}:${
+        process.env.MQTT_PORT || config.mqttPort
+      }`,
       {
-        password: config.mqttPass,
-        username: config.mqttUser
+        password: process.env.MQTT_PASS || config.mqttPass,
+        username: process.env.MQTT_USER || config.mqttUser
         // rejectUnauthorized: false,
         // key: options.key,
         // cert: options.cert

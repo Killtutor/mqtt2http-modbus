@@ -1,0 +1,45 @@
+name: Deploy to Production
+
+# Trigger conditions for the workflow
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-deploy-prod:
+    name: "Build MQTT2HTTP-MODBUS DEMO"
+    environment: production
+    runs-on: monitoreo
+
+    defaults:
+      run:
+        working-directory: .
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      # Step 2: Check for existing Traefik container
+      - name: Check for existing Traefik container
+        id: check_traefik
+        run: |
+          if docker ps --format '{{.Names}}' | grep -q '^traefik$'; then
+            echo "TRAEFIK_EXISTS=true" >> $GITHUB_OUTPUT
+          else
+            echo "TRAEFIK_EXISTS=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Step 3: Deploy Traefik if it doesn't exist
+      - name: Deploy Traefik (if not exists)
+        run: |
+          docker network create -d bridge traefik-net || true
+          docker compose -f docker-compose-traefik.yml up -d
+      # Step 3: Build CORE image for production preview
+      - name: launch MQTT2HTTP-MODBUS DEMO
+        env:
+          MQTT_PASS: ${{secrets.MQTT_PASS}}
+        working-directory: ./
+        run: |
+          COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -f ./docker-compose.yml up --build -d

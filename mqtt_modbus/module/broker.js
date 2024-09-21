@@ -37,7 +37,7 @@ if (["localhost", "127.0.0.1"].includes(config.mqttHost)) {
   const server = require("node:net").createServer(aedes.handle);
   // This For MQTT over TLS
   // const server = require("tls").createServer(options, aedes.handle);
-  const port = config.mqttPort;
+  const port = process.env.MQTT_PORT || config.mqttPort;
   server.listen(port, function () {
     console.log("MQTT Broker started and listening on port ", port);
   });

@@ -12,10 +12,15 @@ const { default: axios } = require("axios");
 const initialize = async () => {
   ////////// MQTT Functions //////////////
   // Inicialize the mqtt client
-  const client = mqtt.connect(`mqtt://${config.mqttHost}:${config.mqttPort}`, {
-    password: config.mqttPass,
-    username: config.mqttUser
-  });
+  const client = mqtt.connect(
+    `mqtt://${process.env.MQTT_HOST || config.mqttHost}:${
+      process.env.MQTT_PORT || config.mqttPort
+    }`,
+    {
+      password: process.env.MQTT_PASS || config.mqttPass,
+      username: process.env.MQTT_USER || config.mqttUser
+    }
+  );
   // When connected Let us know
   client.on("connect", function () {
     console.info("Conectado al broker. Esperando topicos para suscribirse...");
