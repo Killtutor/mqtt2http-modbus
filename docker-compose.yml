@@ -97,8 +97,7 @@ services:
       - "traefik.http.routers.mqtt.tls.certresolver=le"
 
     depends_on:
-      - redis
-      - tomcat:
+      tomcat:
         condition: service_healthy
     networks:
       vemetris:
