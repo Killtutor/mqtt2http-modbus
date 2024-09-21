@@ -40,6 +40,7 @@ jobs:
       - name: launch MQTT2HTTP-MODBUS DEMO
         env:
           MQTT_PASS: ${{secrets.MQTT_PASS}}
+          REDIS_PASSWORD: ${{secrets.REDIS_PASSWORD}}
         working-directory: ./
         run: |
           COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -f ./docker-compose.yml up --build -d
