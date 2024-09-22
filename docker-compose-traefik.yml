@@ -2,6 +2,9 @@ services:
   traefik:
     image: "traefik:v3.1"
     container_name: "traefik"
+    environment:
+      - "CF_API_EMAIL=agustinng14@gmail.com"
+      - "CF_API_KEY=03a8f2adabd7c6f22b7cb4f7d5bbdfc6fac1a"
     command:
       - "--log.level=DEBUG"
       - "--api=true"
@@ -11,7 +14,8 @@ services:
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.websecure.address=:443"
       - "--providers.docker.exposedbydefault=true"
-      - "--certificatesresolvers.le.acme.tlschallenge=true"
+      - "--certificatesresolvers.le.acme.dnschallenge=true"
+      - "--certificatesresolvers.le.acme.dnschallenge.provider=cloudflare"
       - "--certificatesresolvers.le.acme.email=dev@kriollotech.com"
       - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
     restart: unless-stopped
