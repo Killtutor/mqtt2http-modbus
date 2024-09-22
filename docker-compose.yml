@@ -40,12 +40,15 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.vemetris.rule=Host(`tesis.kriollotech.com`)"
       - "traefik.http.services.vemetris.loadbalancer.server.port=8080"
-      - "traefik.port=8080"
       - "traefik.http.routers.vemetris.entrypoints=websecure"
       - "traefik.http.routers.vemetris.tls.certresolver=le"
       - "traefik.http.routers.vemetris.middlewares=vemetris-timeout"
-      - "traefik.http.middlewares.vemetris-timeout.forwardingtimeouts.dialtimeout=60s"
-      - "traefik.http.middlewares.vemetris-timeout.forwardingtimeouts.responsetimeout=60s"
+      - "traefik.http.middlewares.vemetris-timeout.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.middlewares.vemetris-timeout.headers.sslredirect=true"
+      - "traefik.http.middlewares.vemetris-timeout.headers.stsSeconds=315360000"
+      - "traefik.http.middlewares.vemetris-timeout.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.vemetris-timeout.headers.stsPreload=true"
+      - "traefik.http.middlewares.vemetris-timeout.headers.forceSTSHeader=true"
     healthcheck:
       test: ["CMD", "bash", "/healthCheck.sh"]
       start_period: 10s
