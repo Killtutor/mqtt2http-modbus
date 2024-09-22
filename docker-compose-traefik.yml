@@ -9,6 +9,7 @@ services:
       - "--log.level=DEBUG"
       - "--api=true"
       - "--api.dashboard=true"
+      - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
@@ -28,7 +29,7 @@ services:
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.tls.certresolver=le"
       - "traefik.http.routers.dashboard.middlewares=auth"
-      - "traefik.http.middlewares.auth.basicauth.users=admin:$apr1$JmB4T2Zj$unPEAZSPYQmOUX.8XONLm1"
+      - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$JmB4T2Zj$$unPEAZSPYQmOUX.8XONLm1"
 
     ports:
       - "80:80"
