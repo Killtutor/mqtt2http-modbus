@@ -33,6 +33,7 @@ services:
     restart: unless-stopped
     ports:
       - ":8080"
+      - ":8000"
     mem_limit: 3g
     memswap_limit: -1
     mem_swappiness: 20
@@ -126,9 +127,6 @@ services:
       traefik-net:
         aliases:
           - redis
-
-networks:
-  traefik-net:
 
 volumes:
   mqttData:
