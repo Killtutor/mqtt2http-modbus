@@ -4,5 +4,4 @@
 **/*.key
 **/*.csr
 .vscode
-data
 package-lock.json
