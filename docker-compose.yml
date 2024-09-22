@@ -128,5 +128,9 @@ services:
         aliases:
           - redis
 
+networks:
+  traefik-net:
+    external: true
+
 volumes:
   mqttData:
