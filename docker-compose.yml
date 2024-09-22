@@ -21,7 +21,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      vemetris:
+      traefik-net:
         aliases:
           - db
 
@@ -56,7 +56,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      vemetris:
+      traefik-net:
         aliases:
           - tomcat
     depends_on:
@@ -106,7 +106,7 @@ services:
       tomcat:
         condition: service_healthy
     networks:
-      vemetris:
+      traefik-net:
         aliases:
           - mqtt
 
@@ -123,12 +123,12 @@ services:
     # depends_on:
     #   - traefik
     networks:
-      vemetris:
+      traefik-net:
         aliases:
           - redis
 
 networks:
-  vemetris:
+  traefik-net:
 
 volumes:
   mqttData:
