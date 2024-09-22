@@ -99,10 +99,11 @@ services:
     mem_swappiness: 20
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.mqtt.rule=Host(`mqtt.backend.kriollotech.com`)"
-      - "traefik.http.routers.mqtt.entrypoints=websecure"
-      - "traefik.http.routers.mqtt.tls.certresolver=le"
-      - "traefik.tcp.routers.mqtt.rule=HostSNI(`*`)"
+      # - "traefik.http.routers.mqtt.rule=Host(`mqtt.backend.kriollotech.com`)"
+      # - "traefik.http.routers.mqtt.entrypoints=websecure"
+      # - "traefik.http.routers.mqtt.tls.certresolver=le"
+      - "traefik.tcp.routers.mqtt.rule=HostSNI(`mqtt.backend.kriollotech.com`)"
+      - "traefik.tcp.routers.mqtt.tls=true"
       - "traefik.tcp.routers.mqtt.tls.certresolver=le"
       - "traefik.tcp.services.mqtt.loadbalancer.server.port=1883"
       - "traefik.tcp.routers.mqtt.entrypoints=mqtt"

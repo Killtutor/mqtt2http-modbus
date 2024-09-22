@@ -14,7 +14,7 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.mqtt.address=:1883"
+      - "--entrypoints.mqtt.address=:8883"
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--certificatesresolvers.le.acme.dnschallenge=true"
@@ -34,7 +34,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "1883:1883"
+      - "8883:8883"
     volumes:
       - "./letsencrypt:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
