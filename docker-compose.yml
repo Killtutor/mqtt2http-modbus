@@ -33,16 +33,19 @@ services:
     restart: unless-stopped
     ports:
       - ":8080"
-      - ":8000"
     mem_limit: 3g
     memswap_limit: -1
     mem_swappiness: 20
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.mqtt2http-modbus.rule=Host(`tesis.kriollotech.com`)"
+      - "traefik.http.routers.vemetris.rule=Host(`tesis.kriollotech.com`)"
+      - "traefik.http.services.vemetris.loadbalancer.server.port=8080"
       - "traefik.port=8080"
-      - "traefik.http.routers.mqtt2http-modbus.entrypoints=websecure"
-      - "traefik.http.routers.mqtt2http-modbus.tls.certresolver=le"
+      - "traefik.http.routers.vemetris.entrypoints=websecure"
+      - "traefik.http.routers.vemetris.tls.certresolver=le"
+      - "traefik.http.routers.vemetris.middlewares=vemetris-timeout"
+      - "traefik.http.middlewares.vemetris-timeout.forwardingtimeouts.dialtimeout=60s"
+      - "traefik.http.middlewares.vemetris-timeout.forwardingtimeouts.responsetimeout=60s"
     healthcheck:
       test: ["CMD", "bash", "/healthCheck.sh"]
       start_period: 10s
