@@ -41,6 +41,7 @@ jobs:
         env:
           MQTT_PASS: ${{secrets.MQTT_PASS}}
           REDIS_PASSWORD: ${{secrets.REDIS_PASSWORD}}
+          MYSQL_ROOT_PASSWORD: ${{secrets.MYSQL_ROOT_PASSWORD}}
         working-directory: ./
         run: |
           COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -f ./docker-compose.yml up --build -d
