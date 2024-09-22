@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//ES">
+<html><head><!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ --></head><body><h1>Visión general</h1>
+<p>
+	Los manejadores de eventos proveen un comportamiento definido por el usuario que es ejecutado cuando se produce un evento particular. Los eventos pueden
+	producirse por varias condiciones en el sistema (Ver la sección de eventos en la página de ayuda general para más información). Cuando esto sucede, el
+	manejador de eventos asociado es ejecutado.
+</p>
+<p>
+	Actualmente hay cuatro manejadores de eventos:
+</p>
+<ul>
+  <li><b>Manejador de correo</b>: envía correos electrónicos a una lista de destinatarios</li>
+  <li><b>Manejador de SMS</b>: envía mensajes de texto (SMS) a una lista de destinatarios</li>
+  <li><b>Manejador de ajuste de punto</b>: ajusta el valor de un punto en particular</li>
+  <li><b>Manejador de proceso</b>: ejecuta un comando en el sistema operativo del servidor</li>
+</ul>
+
+<h1>Tipos de eventos</h1>
+<p>
+	La sección de tipos de eventos ordena todos los eventos disponibles del sistema en forma de arbol. En la sección de eventos de puntos se tiene
+	una lista de todos los puntos (indicados con <img src="images/icon_comp.png">) del sistema que tienen detectores de eventos.
+	Los detectores de eventos se muestran en las ramas respectivas de cada punto.
+</p>
+<p>
+	Los tipos de eventos para los eventos programados, detector de eventos compuestos y eventos del sistema se listan debajo de las ramas
+	respectivas. La rama de fuentes de datos contiene una lista de todas las fuentes de datos que pueden generar eventos. Los eventos son
+	listados debajo de su fuente de datos respectiva.
+</p>
+<p>
+	Para agregar un nuevo manejador de eventos, hacer click en el evento que desea manejar; se mostrará la sección de detalles del manejador
+	de eventos. El manejador de eventos actual no será guardado hasta hacer clic en el icono <img src="images/save_add.png">. Para editar un
+	manejador existente, hacer click en su nombre dentro de la lista de manejadores en la rama del evento seleccionado.
+</p>
+<p>
+	Cuando agrega un nuevo manejador, debe seleccionar su <b>Tipo</b>. Una vez guardado el manejador, no podrá cambiar de tipo.
+</p>
+
+<h1>Alias de evento</h1>
+<p>
+	Se puede escribir un alias arbitrario para describir el evento de forma visual. Este alias reemplaza el título del correo electrónico así
+	como el contenido del mensaje de texto (SMS) a enviar.
+</p>
+
+<h1>Edición de manejadores de eventos existentes</h1>
+<p>
+	Para guardar los cambios de un manejador, hacer clic en el icono <img src="images/save.png"> en la parte superior derecha de la sección del manejador.
+	Para borrar un manejador, hacer click en el icono <img src="images/delete.png">.
+</p>
+
+<h1>Edición de manejadores de correo</h1>
+<p>
+	Los manejadores de correo pueden tener hasta tres listas de destinatarios: Cuando se produce un evento, cuando se escala y cuando se vuelve inactivo.
+	Estas dos últimas son opcionales.
+</p>
+<p>
+	Para agregar una lista de correos a la lista de destinatarios debe seleccionarla desde <b>Agregar lista de correos</b> haciendo clic en el icono
+	<img src="images/add.png"> correspondiente. Para agregar un usuario, debe seleccionarlo de la lista <b>Agregar usuario</b> y hacer clic en el icono
+	<img src="images/add.png"> correspondiente. Para agregar una dirección de correo de forma explicita, escrirla en la casilla de <b>Agregar dirección</b>
+	y hacer clic en el icono <img src="images/add.png">justo al lado de la casilla. Para borrar algún destinatario de la lista, hacer clic en el icono
+	<img src="images/bullet_delete.png"> junto al destinatatio. Para probar la lista de destinatarios, presionar en el icono <img src="images/email_go.png">
+	de esa lista.
+</p>
+<p>
+	Para enviar correos de escalamiento, seleccionar la casilla <b>Enviar escalamiento</b>, e introducir los <b>Destinatarios del escalamiento</b>. El correo
+	de escalamiento sólo será enviado si el evento asociado se mantiene durante el tiempo establecido en <b>Escalar si está activo por</b>.
+</p>
+<p>
+	Para enviar correos de evento inactivo, seleccionar la casilla <b>Enviar notificación de evento inactivo</b>. Note que si el correo de escalamiento no ha sido
+	enviado, la notificación de evento inactivo no será enviado a la lista de destinatatios de escalamiento. Sólo los destinatarios que recibieron una notificación
+	de evento activo tendrán notificación de evento inactivo. Este comportamiento puede ser reemplazado seleccionado la casilla
+	<b>Reemplazar destinatarios de eventos inactivos</b>, lo que permite seleccionar la lista específica de destinatarios que recibiran el correo. Esto puede ser útil
+	cuando existen usuarios que sólo necesitan recibir notificaciones de eventos activos.</p>
+<p>
+</p>
+
+<h1>Edición de manejadores de SMS</h1>
+
+<p>Los manejadores de SMS pueden tener hasta tres listas de destinatarios: Cuando se produce un evento, cuando se escala y cuando se vuelve inactivo.
+	Estas dos últimas son opcionales.
+</p>
+
+<p>
+	Para agregar una lista de teléfonos móviles a la lista de destinatarios debe seleccionarla desde <b>Agregar lista de teléfonos móviles</b> haciendo clic en el icono
+	<img src="images/add.png"> correspondiente. Para agregar un usuario, debe seleccionarlo de la lista <b>Agregar usuario</b> y hacer clic en el icono
+	<img src="images/add.png"> correspondiente. Para agregar un número de teléfono móvil de forma explicita, escrirla en la casilla de <b>Agregar dirección</b>
+	y hacer clic en el icono <img src="images/add.png">justo al lado de la casilla. Para borrar algún destinatario de la lista, hacer clic en el icono
+	<img src="images/bullet_delete.png"> junto al destinatatio. Para probar la lista de destinatarios, presionar en el icono <img src="images/sms_go.png">
+	de esa lista.
+</p>
+
+<p>
+	Para enviar mensajes de texto (SMS) de escalamiento, seleccionar la casilla <b>Enviar escalamiento</b>, e introducir los <b>Destinatarios del escalamiento</b>. El SMS
+	de escalamiento sólo será enviado si el evento asociado se mantiene durante el tiempo establecido en <b>Escalar si está activo por</b>.
+</p>
+
+<p>
+	Para enviar SMS de evento inactivo, seleccionar la casilla <b>Enviar notificación de evento inactivo</b>. Note que si el SMS de escalamiento no ha sido
+	enviado, la notificación de evento inactivo no será enviado a la lista de destinatatios de escalamiento. Sólo los destinatarios que recibieron una notificación
+	de evento activo tendrán notificación de evento inactivo. Este comportamiento puede ser reemplazado seleccionado la casilla
+	<b>Reemplazar destinatarios de eventos inactivos</b>, lo que permite seleccionar la lista específica de destinatarios que recibiran el SMS. Esto puede ser útil
+	cuando existen usuarios que sólo necesitan recibir notificaciones de eventos activos.</p>
+<p>
+</p>
+
+
+<h1>Edición de manejadores de ajuste de punto</h1>
+<p>
+	Cuando se produce un evento, este manejador fijará el valor del punto proporcionado. El <b>Objetivo</b> es el punto que será modificado. Opcionalmente,
+	el punto puede ser fijado por un valor de otro punto, pero esto solo es posible si el tipo de datos del punto objetivo es el mismo del punto fuente.
+	Para que el punto objetivo sea fijado con el valor del punto fuente, seleccionar <b>Ajustar al valor del punto</b>. Si desea establecer un valor fijo,
+	seleccionar <b>Ajustar al valor estático</b> e introducir el <b>valor a ajustar</b>.
+</p>
+
+<h1>Edición de manejadores de procesos</h1>
+<p>
+	Este manejador ejecutará un proceso local, o un comando shell cuando se produce un evento o cuanto se torna inactivo. Los comandos respectivos pueden ser
+	cualquiera de los comandos shell soportados por el servidor. Los comandos deben ser especificados como si fueran escritos desde una terminal.
+	Para comandos muy complejos, puede resultar conveniente la escritura de scripts y luego ejecutarlos desde esta casilla.
+</p>
+
+<p>
+	Si un proceso falla en iniciar por alguna razón, se producirá un evento de sistema especificando la descripción de la falla. Ademas, este proceso será terminado
+	si se mantiene activo por mas de 15 segundos. Si la salida del proceso no está vacía, esta será escrita en el log del sistema con el nivel de "información". Si
+	un error produce salida no vacía, esta será escrita en el log del sistema con el nivel de "error".
+</p>
+</body></html>

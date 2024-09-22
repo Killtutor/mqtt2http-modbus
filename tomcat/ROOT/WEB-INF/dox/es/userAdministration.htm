@@ -1,0 +1,48 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//ES">
+<html><head><!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ --></head><body><h1>Visión general</h1>
+<p>
+	Los <b>Usuarios</b> representan las personas que utilizan el sistema. Diversos privilegios se pueden asignar a los usuarios
+	para concederles la capacidad de leer o modificar los datos así como la configuración de parámetros del sistema.
+</p>
+
+<p>
+	Existen dos niveles básicos de usuarios: administradores (<img src="images/user_suit.png">), y usuarios simples
+	(<img src="images/user_green.png">). Los administradores tienen acceso a toda la funcionalidad del sistema.
+	Los usuarios simples tienen varios privilegios dependiendo de la configuración.
+</p>
+
+<h1>Edición de usuarios</h1>
+<p>
+	Para agregar un nuevo usuario debe hacer clic en el icono <img src="images/user_add.png">. El usuario no será agregado al sistema hasta
+	que sea guardado. Para editar un usuario existente se debe hacer clic en su nombre para mostrar el panel de edición.
+</p>
+<p>
+	Las contraseñas no se pueden recuperar una vez que han sido guardadas.
+</p>
+<p>
+	Un usuario deshabilitado no tiene permisos para entrar al sistema. Para borrar un usuario hacer clic en <img src="images/delete.png">.
+</p>
+<p>
+	Para verificar la dirección de correo hacer clic en <img src="images/email_go.png">. Esto intentará enviar un correo electrónico a la dirección especificada.
+	Para verificar el número telefónico hacer clic en <img src="images/sms_go.png">. Esto intentará enviar un SMS al teléfono móvil especificado.
+</p>
+<p> Los usuarios pueden recibir correos o SMS de alarma sin estar explícitamente agregados a un manejador de eventos
+	seleccionando un nivel diferente de "ninguno" en <b>Enviar alarmas por correo</b> o <b>Enviar alarmas por mensaje de texto</b>, esto provocará que se envíen todas las
+	alarmas con nivel igual o superior al seleccionado. Si la dirección o número ya se encuentran especificados en un manejador de eventos, sólo será enviada una notificación.
+</p>
+
+<h1>Privilegios de usuarios</h1>
+<p>La casilla de verificación <b>Administrador</b> determina si un usuario tiene privilegios de administrador.</p>
+<p>
+	Si un usuario no cuenta con privilegios de administrador, se listarán todas las fuentes de datos que puede compartir para fijar sus privilegios de forma explícita.
+	Si se selecciona la casilla de verificación de la fuente de datos (sólo administradores) se otorgan permisos para compartirla con otros usuarios.
+</p>
+<p>
+	Si la casilla de verificación de una fuente de datos no se activa, se mostrará la lista de todos los puntos que ella contiene.
+	A cada punto se puede fijar individualmente el tipo de acceso (ninguno, leer o modificar).
+</p></body></html>

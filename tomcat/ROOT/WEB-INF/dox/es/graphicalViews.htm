@@ -1,0 +1,38 @@
+<!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ -->
+<h1>Visión general</h1>
+<p>Una vista gráfica es similar a una lista de supervisión, pero esta proporciona una representación gráfica de los puntos seleccionados.
+	Los valores de los puntos y su fecha/hora se actualizan automáticamente, no es necesario actualizar la página.
+	(De hecho, el sistema funciona de manera más eficiente si no lo hace.)</p>
+
+<h1>Selección de una vista gráfica</h1>
+<p>
+	Un usuario puede tener múltiples vistas gráficas, pero sólo puede ver una a la vez. Utilice el control desplegable para seleccionar la
+	vista a la que desee mostrar.
+</p>
+
+<p>
+	El propietario de la vista gráfica puede compartirla con los demás usuarios haciendo click en el icono (<img src="images/user.png"/>). Se
+	pueden otorgar permisos de lectura o escritura de los puntos presentes en la vista. Si usted no es el propietario de la vista y no desea
+	tenerla en su lista, puede hacer click en el icono (<img src="images/icon_view_delete.png"/>) para darse de baja de la vista gráfica.
+	Las vistas gráficas sólo pueden ser creadas, modificadas o eliminadas por un integrador autorizado. Consulte
+	<a href="http://www.vemetris.com" target="_blank">www.vemetris.com</a> para más información.
+</p>
+
+<h1>Puntos en las vistas gráficas</h1>
+<p>Un punto puede pertenecer a múltiples vistas gráficas, por lo que puede tener vistas tan específicas como sea necesario.</p>
+<p>
+	La representación de cada punto en la vista depende de la configuración del mismo. Los puntos se pueden representar por un cuadro con el valor actual
+	o por un conjunto de imágenes que representan visualmente el valor del punto. Cuando el usuario pasa el cursor sobre el punto se muestran una serie de
+	controles en pantalla (si estos no fueron desactivados de forma implícita). Los controles también dependerán de la configuración de cada punto.
+	Al pasar el puntero sobre el icono <img src="images/information.png"/> se mostrará el valor actual del punto y la fecha/hora de su última actualización.
+	Los puntos que son modificables (y cuenta con permiso para ello) mostrarán el icono <img src="images/icon_edit.png"/>.
+	Al pasar el ratón sobre este icono, se presentan opciones de ajuste del punto. Los Puntos que están configurados para
+	gráficos mostrarán el icono <img src="images/icon_chart.png"/>, al pasar el cursor sobre el mismo se mostrará el gráfico actual. Los gráficos se actualizan
+	automáticamente cuando se reciben nuevos datos. Si un icono de alerta (<img src="images/warn.png"/>) se muestra junto al punto, significa que el punto
+	presenta un detector de eventos activo (posible alarma). El icono <img src="images/hourglass.png"/> se muestra cuando el valor de punto no está actualizado.
+</p>

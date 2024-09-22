@@ -1,0 +1,58 @@
+<!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ -->
+<p>El sistema soporta cuatro tipos de registro de datos</p>
+
+<p>
+  <b>Cuando cambia el valor del punto</b> es el valor predeterminado. El valor del punto y su fecha/hora serán guardados
+	en la base de datos sólo si el valor del punto cambia realmente. Esta configuración proporciona la mejor relación de
+	de información histórica vs eficiencia de espacio de almacenamiento. Para los puntos numéricos, una <b>Tolerancia</b>,
+	o "banda muerta", puede ser fijada; el valor se registra si el valor absoluto de la diferencia entre el valor actual y
+	el valor anterior es igual o excede de una determinada tolerancia.
+</p>
+
+<p>
+	<b>Todos los datos</b> produce que se guarde cada actualización del punto en la base de datos. Utilice esta configuración
+	sólo si es explicitamente requerido almacenar todas las muestras ya que esto puede acumular una cantidad significativa de
+	datos reduciendo el desempeño del sistema.
+</p>
+
+<p>
+	<b>No guardar</b> previene que se guarde algún histórico en la base de datos. Tenga en cuenta que para gráficar un punto se
+	requiere almacenar históricos.
+</p>
+
+<p>
+	se puede almacenar sólo los valores que se encuentren dentro de un <b>Intervalo</b> de valores. Utilice esta opción cuando la
+	fuente de datos recolecta información muy rápidamente (por ejemplo, para detectores de eventos). No serán guardados los valores
+	que se encuentren fuera del intervalo especificado. El <b>tipo de valor</b> puede ser "Instantáneo" o un valor estadístico dentro
+	del intervalo de tiempo almacenado.
+</p>
+
+<p>
+	<b>Cuando cambia la marca de tiempo del punto</b> es similar a "Cuando cambia el valor del punto", pero esta vez la comparación
+	se realiza con el valor de fecha/hora de la última muestra.
+</p>
+
+<p>
+	Se pueden descartar valores de fuentes de datos que ocasionalmente pueden enviar datos errados. Cuando <b>Descartar valores extremos</b>
+	es seleccionado, se habilitan las casillas <b>Límite inferior de descarte</b> y <b>Límite superior de descarte</b>. Los valores inferiores
+	al límite inferior o superiores al límite superior serán descartados. Los valores almacenados previamente en los históricos se mantendrán.
+</p>
+
+<p>
+	La opción de <b>Borrado</b> determina cuanto tiempo debe permanecer en la base de datos un valor histórico. Los valores pueden permanecer el tiempo
+	que sea necesario, pero esto a medida que pase el tiempo puede ir reduciendo el desempeño del sistema si llega a ocupar un espacio considerable
+	en la base de datos. (El rendimiendo del sistema depende fuertemente del hardware del servidor y la carga de la base de datos). El proceso de borrado
+	inicia cada madrugada a las 3:05 am hora local.
+</p>
+
+<p>
+  El <b>tamaño del cache por defecto</b> es el número de valores que pueden ser almacenados en memoria. Esta configuración es especialmente importante
+  cuando es utilizado el método "Todos los datos". Estableciendo este valor muy alto puede reducir el uso de la CPU (porque reduce el número de
+  consultas a la base de datos), pero puede aumentar el consumo de memoria RAM del sistema. "Borrar caché" normalmente no es necesario, sin embargo
+  resulta conveniente cuando se realiza un borrado manual de los puntos (por ejemplo, accediendo directamente a la base de datos).
+</p>

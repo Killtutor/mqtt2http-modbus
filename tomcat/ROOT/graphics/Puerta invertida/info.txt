@@ -1,0 +1,6 @@
+name=Puerta invertida Abierta/Cerrada
+type=imageSet
+#width=227
+#height=161
+text.x=119
+text.y=-19

@@ -1,0 +1,6 @@
+name=Compresor
+type=imageSet
+#width=69
+#height=70
+text.x=-3
+text.y=-17

@@ -1,0 +1,53 @@
+<!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ -->
+<h1>Visión general</h1>
+<p>
+    Los mantenimientos programados son usados para programar periodos de mantenimiento para fuentes de datos, de tal manera que los eventos generados por la fuente
+    de datos y sus puntos dentro de este período son automáticamente reconocidos y no se envían alarmas por correo electrónico o SMS.
+    Cuando se inicia el modo de mantenimiento, se activa un evento único, este evento se desactiva cuando vuelve a la normalidad o es desactivado manualmente.
+    Observe que se puede activar manualmente el modo de mantenimiento de ser necesario.
+</p>
+
+<h1>Listas de mantenimientos programados</h1>
+<p>
+    Para agregar un nuevo mantenimiento programado, hacer clic en el icono <img src="images/add.png"/>. Para modificar un evento de mantenimiento existente,
+    hacer clic en <img src="images/hammer_arrow.png"/>.</br>
+    La primera columna de la lista muestra el icono <img src="images/hammer.png"/> cuando el evento programado se encuentra habilitado, en caso contrario se muestra
+    <img src="images/hammer_disabled.png"/>; haciendo clic en estos iconos se puede habilitar/deshabilitar directamente sin tener que acceder a la configuración.</br>
+    En la columna <b>estado</b> se muestra el icono <img src="images/hammer_activated.png"/> cuando se encuentra activo el modo de mantenimiento y
+    <img src="images/hammer_deactivated.png"/> para inactivo. Cuando la planificación se realiza de forma <b>manual</b> el modo de mantenimiento estará activo siempre
+    que esté habilitado el mantenimiento programado.
+</p>
+
+<h1>Edición de eventos de mantenimiento</h1>
+<p>
+    La <b>Fuente de datos</b> es aquella a la que se desea realizar mantenimiento.
+</p>
+<p>
+    El <b>Alias</b> es un valor opcional que será usado en la descripción mantenimiento programado dentro del sistema si este es proporcionado. En caso contrario, se usará
+    una descripción generada automáticamente.
+</p>
+<p>
+    El <b>Nivel de alarma</b> determina si se genera una alarma al activarse el modo de mantenimiento y la gravedad de la misma.
+    Consulte la página de ayuda general para obtener información sobre las alarmas.
+</p>
+<p>
+    El <b>Tipo de planificación</b> determina el periodo de tiempo en que se realizará el mantenimiento. Esos tipos incluyen horario, diario, etc. Por ejemplo, un tipo de
+    planificación horario correrá el modo de mantenimiento cada hora. Si se requiere realizar mantenimiento dos veces al día, es necesario definir dos mantenimientos programados diarios,
+    uno para cada hora. Sin embargo, también es posible definir un patrón cronológico que corra varias veces dentro del periodo de tiempo. (Ver la documentación
+    "Patrones de cronológicos" para más información)
+</p>
+
+<p>Para habilitar o deshabilitar un mantenimiento programado hacer clic en el icono <img src="images/hammer_disabled.png"/> o <img src="images/hammer.png"/> según
+    sea el caso. Cuando la planificación se realiza de forma <b>manual</b> el modo de mantenimiento estará activo siempre que esté habilitado el mantenimiento programado</p>
+
+<h1>Horas de Actividad/Retorno</h1>
+<p>Los campos disponibles para la edición de horas de actividad y retorno dependen del tipo de planificación seleccionado. Estos campos no deberian requerir explicación
+    ya que son basados exclusivamente en el calendario gregoriano.</p>
+
+<p>Para guardar un mantenimiento programado, hacer clic en el icono <img src="images/save.png"/> en la parte superior derecha. Para borrar un mantenimiento programado
+    existente, hacer clic en el icono <img src="images/delete.png"/>.</p>

@@ -1,0 +1,53 @@
+<!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ -->
+<h1>Visión general</h1>
+<p>
+  El transmisor HTTP envía cada actualización de punto (o cambio, según corresponda) a una URL determinada.
+</p>
+
+<h1>Propiedades del transmisor HTTP</h1>
+<p>
+  El <b>Método</b> determina el típo de método de transmisión HTTP (GET/POST). Los datos enviados en ambos casos son idénticos; la única diferencia
+	se encuentra en la estructura del mensaje. La <b>URL</b> define el destino a donde deben enviarse los datos. Los esquemas válidos
+	incluyen "http" y "https". El servidor puede ser un nombre de dominio o dirección IP. También son válidas las rutas y cadenas de consulta.
+</p>
+<p>
+  Se puede agregar una lista de <b>cabeceras estáticas</b> y <b>parámetros estáticos</b>. Esos datos son incluidos en cada petición enviada
+  a la URL. Este es el lugar apropiado para incluir credenciales u otras formas de identificación.
+</p>
+<p>
+  El <b>Formato de fecha</b> determina como el publicador dará formato a las marcas de tiempo de los puntos. El formato "Básico" es de la forma
+  "yyyyMMddHHmmss". "Zona horaria" es similar, pero inclute más información de acuerdo a la ubicación local. Esta podría ser una forma
+  "yyyy-MM-dd'T'HH:mm:ss'Z'". "UTC" usa un valor numérico que representa el número de milisegundos transcurridos desde la medianoche del
+  1 de enero de 1970.
+</p>
+
+<h1>Respuesta HTTP</h1>
+<p>
+	Cualquier otra respuesta diferente de "200 OK" es considerada un error y se activará una alarma. Adicionalmente, el contenido de cada respuesta
+	con es condiserado una información de alerta. <b>Levantar resultado de alerta</b> determina si cualquier contenido de respuesta
+	activa una alarma de información.
+</p>
+
+<h1>Prueba de envío de HTTP</h1>
+<p>
+	Se puede enviar una petición de prueba usando la configuración actual pero solo incluyendo los parámetros estáticos; haciendo clic en el botón
+	"Enviar parámetros estáticos". El resultado será mostrado debajo de los botones. Para cancelar la prueba hacer clic en el boton "Cancelar".
+</p>
+
+<h1>Puntos del publicador</h1>
+<p>
+  La sección de  <b>Puntos</b> muestra los puntos a ser publicados. La publicación de puntos puede ser habilitada (<img src="images/brick_go.png"/>)
+	o deshabilitada (<img src="images/brick_stop.png"/>). El <b>Parámetro nombre</b> es la clave que será utilizada para el punto en los parámetros de
+	la petición. El valor será el valor presente del punto. Seleccionar <b>Incluir fecha y hora</b> para incluir un parámetro en la petición
+	que contenga la fecha/hora de la actualización del valor. La clave para la hora será "__time", y el valor será codificado de acuerdo al formato
+	de fecha. (Ver la documentación "Formatos de fecha/hora" para más detalles.)
+</p>
+<p>
+	Para agregar un punto a la lista, seleccionarlo y hacer clic en el icono <img src="images/icon_comp_add.png"/>.
+	Para borrar un punto existente, hacer clic en el icono <img src="images/bullet_delete.png"/> correspondiente al punto.
+</p>

@@ -1,0 +1,35 @@
+<!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ -->
+<h1>Vision general</h1>
+<p>
+	En cada actualización de punto (o cambio, según corresponda) el publicador envía a los servidores de Cosm los valores API key,
+	feed, ID y data stream ID como peticiones HTTP separadas.
+</p>
+
+<h1>Propiedades</h1>
+<p>
+	La <b>API Key</b> es requerida para actualizar datos privados. Puede encontrarla en el área de configuración dentro de su cuenta de Cosm.
+	Los parámetros de <b>Timeout</b> y <b>Reintentos</b> son utilizados para controlar errores.
+</p>
+
+<h1>Respuesta HTTP</h1>
+<p>
+	Cualquier respuesta difetente de "200 OK" es considerada un error y se activará una alarma. Note que dependiendo de la cuenta de Cosm, se pueden
+	aplicar algunas restricciones en la respuesta. Ver
+	<a href="https://cosm.com/docs/">https://cosm.com/docs/</a> para mayor información.
+</p>
+
+<h1>Puntos del publicador</h1>
+<p>
+	La sección de <b>Puntos</b> muestra los puntos a ser publicados. La publicación de puntos puede ser habilitada (<img src="images/brick_go.png"/>)
+	o deshabilitada (<img src="images/brick_stop.png"/>). Los valores <b>Feed ID</b> y <b>Data stream ID</b> determinan los datos que serán
+	actualizados.
+</p>
+<p>
+	Para agregar un punto a la lista, seleccionarlo y hacer clic en el icono <img src="images/icon_comp_add.png"/>.
+	Para borrar un punto existente, hacer clic en el icono <img src="images/bullet_delete.png"/> correspondiente al punto.
+</p>

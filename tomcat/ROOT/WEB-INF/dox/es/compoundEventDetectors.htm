@@ -1,0 +1,55 @@
+<!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ -->
+<h1>Visión general</h1>
+<p>Un detector de eventos compuestos es usado para detectar condiciones entre múltiples eventos al mismo tiempo. En lugar de sólo observar cuando un valor es
+	demasiado alto o bajo, un dispositivo está en un estado determinado, o si se trata de un día determinado de la semana, los detectores de eventos compuestos permiten
+	definir las relaciones lógicas entre todas estas cosas. Por ejemplo, se puede detectar situaciones en las que un valor es demasiado alto o bajo y otro dispositivo
+	está en un estado dado, pero sólo en un día dado de la semana.</p>
+
+<p>Los detectores compuestos actúan como detectores de condiciones lógicas entre las actuales detectores simples. Por lo tanto, deben existir todos los detectores
+	simples para construir estas relaciones. Ver Detectores de eventos y eventos programados para más información.</p>
+
+<p>Tenga en cuenta que, aunque hay muchos tipos de eventos, sólo se pueden usar eventos de puntos y eventos programados en la construcción de
+	detectores de eventos compuestos.</p>
+
+<h1>Lista de detectores de eventos compuestos</h1>
+<p>Para agregar un detector de eventos compuestos, hacer clic en el icono <img src="images/multi_bell_add.png"/>. Para modificar un detecto existente, hacer clic
+	en el nombre del mismo en la lista de detectores de eventos compuestos.</p>
+
+<h1>Edición de detectores de eventos compuestos</h1>
+<p>El <b>nombre</b> del detector es usado como referencia al detector en codiciones de alarma o como fuente de un manejador de eventos. Se recomienda que el nombre
+	de cada detector sea único, aunque no es requerido.</p>
+
+<p>El <b>Nivel de alarma</b> determina si se genera una alarma al activarse el detector de eventos y la gravedad de la misma.
+Consulte la página de ayuda general para obtener información sobre las alarmas.</p>
+
+<p><b>Volver a la normalidad</b> determina si un evento activo es automáticamente vuelto a la normalidad cuando se torne inactivo. Si esta opción no está
+	seleccionada, será necesario reconocer manualmente las alarmas activas.</p>
+
+<p>Un detector de eventos compuestos puede ser <b>Deshabilitado</b> para que este no corra. Esto puede ser muy útil si no se desea eliminar el detector sino únicamente desactivarlo.
+	Ademas, el sistema podría desactivar el detector automáticamente si se encuentra desactivado o ha sido eliminado algún punto o evento programado del que depende.</p>
+
+	<p>Para guardar un detector de eventos compuestos, hacer clic en el icono <img src="images/save.png"/> en la parte superior derecha. Para borrar un detector
+	existente, hacer clic en el icono <img src="images/delete.png"/>.</p>
+
+<h1>Construcción de condiciones</h1>
+<p>
+	Las condiciones son combinaciones lógicas construidas por detectores de eventos simples (por ejemplo detectores de puntos o eventos programados).
+	Los operadores lógicos típicos son usados para definir la condición general, incluyendo and (&amp;&amp;), or (||), y not (!).
+	Los símbolos son usados en vez de palabras para evitar ambigüedad. Se pueden usar paréntesis para agrupar diferentes secciones.
+</p>
+<p>Los detectores de puntos y eventos programados son definidos usando una letra derivada del indicador de tipo ("P" para el detector de punto, "S"
+	para evento programado), y el número de item. Por conveniencia, la lista de los detectores de eventos simples es proporcionada
+	en forma de arbol debajo de los detalles del detector de eventos compuestos. Junto a los nombres de los detectores se muestra entre paréntesis
+	el nombre con el que son definidos. Al hacer clic en el detector se insertará este nombre dentro de la declaración de condición.</p>
+
+<p>Para validar la declaración de condición hacer clic en el icono <img src="images/accept.png"/>.</p>
+
+<h1>Precedencia de operadores</h1>
+<p>Los operadores lógicos tienen el siguiente orden de precedencia: paréntesis, not, and, or. Para más información sobre las reglas de precedencia
+	ver la sección "Orden de evaluación" <a href="http://es.wikipedia.org/wiki/Orden_de_evaluaci%C3%B3n" target="_blank">aquí</a>.</p>
+

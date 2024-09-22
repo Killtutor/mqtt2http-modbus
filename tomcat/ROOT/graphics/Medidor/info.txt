@@ -1,0 +1,6 @@
+name=uDial
+type=imageSet
+#width=41
+#height=41
+text.x=5
+text.y=50

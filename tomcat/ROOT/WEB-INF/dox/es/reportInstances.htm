@@ -1,0 +1,43 @@
+<!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ -->
+<h1>Visión general</h1>
+<p>Los informes en este sistema tienen dos representaciones: <b>plantillas</b> que definen el contenido de un informe, y las <b>instancias</b> que son el resultado
+	de producir un informe con la plantilla dada. Simplemente: El motor de informes crea instancias de plantillas. Una plantilla tiene atributos como nombre, una lista
+	de puntos que incluye y el rango de tiempo de los valores que extrae. Una instancia hereda el nombre de la plantilla, pero tiene sus propios atributos como la hora de
+	inicio de ejecución, duración de la ejecución, el número de registros que incluye y, por supuesto, los datos.</p>
+
+<p>Una instancia puede ser considerada como una captura de los datos en el intervalo tiempo que fue ejecutada. Los atributos de una instancia no pueden ser cambiados. Además,
+	los datos de la instancia del informe existirán mientras exista la instancia. (Por ejemplo. Estos datos sobreviven al borrado de datos de la fuente).
+	Por esta razón, es importante la limpieza de instancias de informes que ya no se necesiten; especialmente instancias de una gran cantidad de datos.</p>
+
+<p>Las plantillas de informes y sus instancias pertenecen al usuario que las creó y no pueden ser compartidas de forma explícita dentro del sistema, sin embargo pueden
+	ser compartidas de forma implícita. Ver la documentación "Plantillas de informes" para más información.</p>
+
+<h1>Cola de informes</h1>
+<p>La cola de informes muestra todas las instancias de informes para el usuario actual. Esta lista no se refresca de forma automática por lo que debe hacer clic en el icono
+	<img src="images/control_play_blue.png"/> para actualizarla. Algunos eventos, sin embargo, podrían producir que se refresque la lista, como ejecutar un informe.</p>
+
+<p>Las instancias de informes serán listadas en cualquier estado, se hayan completado o sigan corriendo. Las columnas de la lista reflejarán el estado actual de
+	la instancia.</p>
+
+<p>Las columnas de la lista contienen los siguientes campos:</p>
+<ul>
+  <li><b>Nombre del informe</b>: El nombre heredado de la plantilla. Una vez creada la instancia el nombre del informe no cambia incluso si el nombre de la plantilla se cambia.</li>
+  <li><b>Hora de inicio de ejecución</b>: El momento en que el motor de informes ejecutó la plantilla.</li>
+  <li><b>Duración de la ejecución</b>: La cantidad de tiempo que se necesitó para crear la instancia.</li>
+  <li><b>Desde</b>: el tiempo "desde" de los datos que fueron seleccionados (inclusivo).</li>
+  <li><b>Hasta</b>: el tiempo "hasta" de los datos que fueron seleccionados (exclusivo).</li>
+  <li><b>Registros</b>: el número total de registros seleccionados.</li>
+</ul>
+<p>La casilla <b>No borrar</b> permite al usuario prevenir que instancias importantes sean borradas cuando se produzca un borrado programado. (Ver la documentación
+	"Otras configuraciones" para más información.) Esta característica solo debe ser utilizada si es estrictamente necesario que las instancias de informes permanezcan
+	en el sistema debido a que pueden consumir una gran cantidad de espacio de almacenamiento en el servidor.</p>
+
+<p>La última columna de la tabla contiene controles para administrar instancias. El botón <img src="images/bullet_down.png"/> inicia la descarga de un archivo CSV
+	con los datos del informe, adecuado para abrirse en algún programa de hojas de cálculo. El icono <img src="images/icon_chart.png"/> abre una nueva ventana con
+	la información de la instancia, estadísticas y gráficos. Para borrar la instancia hacer clic en <img src="images/bullet_delete.png"/>. Note que las
+	instancias de informes pueden tomar algún tiempo en borrarse.</p>

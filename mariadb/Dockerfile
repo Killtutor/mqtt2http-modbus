@@ -3,6 +3,7 @@ FROM mariadb:10.5
 
 # Copia el script de configuración SQL al directorio docker-entrypoint-initdb.d
 COPY init.sql /docker-entrypoint-initdb.d/
+RUN ls -al /docker-entrypoint-initdb.d/
 
 # Exponer el puerto de la base de datos (3306 por defecto)
 EXPOSE 3306

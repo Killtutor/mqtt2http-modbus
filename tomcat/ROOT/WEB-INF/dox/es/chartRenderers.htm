@@ -1,0 +1,37 @@
+<!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ -->
+<h1>Visión general</h1>
+
+<p>Un procesador gráfico es utilizado para proporcionar una muestra de los valores históricos de un punto en un interválo de tiempo o cantidad de muestras.
+	La información agregada que puede ser proporcionada depende del tipo dato de los valores a ser procesados. Por lo tanto, sólo se mostrarán los tipos
+	de procesamiento permitidos por el punto</p>
+
+<p><b>Nota:</b> El procesador de gráficos depende de los <i>históricos guardados</i>. Si el punto tiene seleccionado el tipo de registro "No registrar",
+	El grafico podría no mostrar la información como se espera. Una excepción potencial podría ser un gráfico de tabla, que podría utilizar los valores
+	almacenados en caché, pero sólo si dichos valores están disponibles. Un reinicio del sistema borra todos los valores almacenados en caché.</p>
+
+<h1>Gráficos de tabla</h1>
+<p>Este tipo de procesamiento gráfico muestra los valores de los datos más recientes (determinado por el <b>Límite</b>) de cada punto. Estos valores se muestran
+	luego de realizar el procesamiento de texto.</p>
+
+<h1>Gráficos estadísticos</h1>
+<p>Este tipo de procesamiento gráfico muestra una tabla con información estadística calculada de en base a los históricos almacenados en el sistema dentro
+	del <b>Intervalo de tiempo</b>. El dato actual mostado depende del tipo de punto:</p>
+
+<p><b>Binario y Multiestado</b>: Estos tipos de datos producirán una lista estadística de "inicio y tiempo de ejecución" para cada estado del punto
+	que se ha producido durante el <b>intervalo de tiempo</b>. Cada estado muestra el número de veces que ha iniciado ("inicio"), la cantidad total de tiempo que
+	el punto estuvo en dicho estado ("tiempo de ejecución"), y el porcentaje del tiempo total que estuvo en dicho estado.</p>
+
+	<p><b>Numérico</b>: Los puntos numéricos producen los siguientes valores estadísticos en el <b>intervalo de tiempo</b>: valor mínimo y la fecha/hora en que ha ocurrido,
+	valor máximo y la fecha/hora que ha ocurrido, promedio, y suma (adecuado para conteo de pulsos).</p>
+
+	<p><b>Alfanumérico</b>: El numero de veces que el punto ha cambiado dentro del <b>intervalo de tiempo</b> seleccionado.</p>
+
+
+<h1>Gráficos de imagen</h1>
+<p>Este tipo de procesamiento gráfico muestra una gráfica de lineas de los valores del punto dentro del <b>interválo de tiempo</b> seleccionado. Sólo se encuentra
+	disponible para puntos con valores numéricos o multiestados.</p>

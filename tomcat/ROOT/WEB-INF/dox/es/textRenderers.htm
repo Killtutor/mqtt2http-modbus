@@ -1,0 +1,54 @@
+<!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ -->
+<h1>Visión general</h1>
+
+<p>El propósito del procesador de texto es convertir un valor crudo a una forma que sea más reconocible e informativa para un usuario humano.
+	Las formas para procesar los valores crudos dependen del tipo de datos del valor a ser convertido. Por lo tanto, sólo se mostrarán los
+	tipos de procesamiento permitidos por el punto.
+
+<h1>Binario</h1>
+<p>El procesamiento <b>Binario</b> permite al usuario seleccionar el texto que se mostrará dependiendo del valor (1,0).
+	Se puede seleccionar cualquier texto. Ademas se puede seleccionar un color que distinga a cada uno. Los ejemplos típicos pueden ser:
+	encendido/apagado, on/off, etc.</p>
+
+<p>El procesamiento <b>Plano</b> es seleccionado por defecto. Se muestra el valor del dato crudo.</p>
+
+<h1>Numérico</h1>
+<p>
+  El procesamiento <b>Analógico</b> permite al usuario definir el <b>Formato</b> utilizado para mostrar el valor como la cantidad de decimales,
+	El separador decimal y el delimitador de miles. (Ver la documentación "Formatos de número" para más información). Además se puede agregar un <b>Sufijo</b> para mostar
+	las unidades de ingenieria del valor. Los sufijos pueden contener entidades HTML como &deg; (escrito como '&amp;deg;') para la visualización dentro
+	de páginas HTML. Ver <a href="http://www.w3.org/TR/REC-html40/sgml/entities.html" target="_blank">http://www.w3.org/TR/REC-html40/sgml/entities.html</a>
+	para mayor información sobre entidades HTML.
+</p>
+
+<p>El procesamiento <b>Plano</b> es seleccionado por defecto. Se muestra el valor del dato crudo.</p>
+
+<p>El procesamiento de <b>Rango</b> permite al usuario definir el <b>Formato</b> numérico (ver la documentación "Formatos del número" para más información), asi como
+	un número arbitrario de textos que representan diferentes intervalos; además se puede definir un color que distinga a cada uno.
+	El formato numérico sólo es usado si el valor no entra dentro de los intervalos definidos. Por ejemplo, el rango "frio", "normal" y "caliente" pueden
+	ser definidos para un punto de temperatura, con los colores apropiados para cada uno.</p>
+
+<p>
+	El procesamiento de <b>Hora</b> permite al usuario definir el <b>Formato</b> de tiempo (Ver la documentación "formatos de fecha/hora" para mas información).
+	El típico formato de fecha podría ser "d, MM yyyy". El típico formato de hora podría ser "HH:mm:ss". Los formatos de fecha y hora pueden ser combinados
+	como sea necesario. Se puede definir una conversión exponencial de milisegundos. Esta es una potencia del exponente 10 que puede ser utilizada para convertir
+	un valor recibido en su valor equivalente en milisegundos. Por ejemplo, para convertir desde segundos se usa 3, para convertir desde microsegundos se usa -3.
+	Si el valor está expresado en milisegundos se usa 0. Los valores de fecha inician el 1 de Enero de 1970 a la media noche.
+</p>
+
+<h1>Multiestados</h1>
+
+<p>El procesamiento <b>Plano</b> es seleccionado por defecto. Se muestra el valor del dato crudo.</p>
+
+<p>El procesamiento <b>Multiestados</b> permite al usuario definir un número arbitrario de valores de texto que representan varios estados del punto; además se puede
+	definir un color que distinga a cada uno. Si se produce un estado que no tiene valor de texto definido, se muestra el valor del dato crudo. Los ejemplos típicos
+	pueden ser: encendido/apagado/desactivado, frio/normal/caliente, etc.
+
+<h1>Alfanumérico</h1>
+
+<p>El procesamiento <b>Plano</b> es seleccionado por defecto. Se muestra el valor del dato crudo, incluyendo un <b>Sufijo</b> opcional.</p>

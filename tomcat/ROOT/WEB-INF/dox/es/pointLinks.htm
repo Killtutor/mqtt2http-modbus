@@ -1,0 +1,62 @@
+<!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ -->
+<h1>Visión general</h1>
+<p>
+	Los enlaces de puntos son usados para actualizar puntos de destino en base a valores de puntos de origen. Esto mantiene dos puntos en "sincronía" de acuerdo
+	a una fórmula de transformación opcional que puede ser definida. Prácticamente hablando, el enlace de puntos puede ser usado para leer valores en un sistema
+	(de una o más fuentes de datos) e inmediatamente fijar los valores en otro sistema (en una o mas fuentes de datos).
+</p>
+<p>
+	El enlace de puntos también se puede lograr mediante el uso de un detector de cambios o actualización en los puntos de origen y, a continuación,
+	crear un manejador de eventos de ajuste de punto para fijar el valor en el punto de destino. Sin embargo, el enlace de puntos sirve mejor para este propósito
+	por varias razones:
+</p>
+<ul>
+  <li>Los enlaces de punto no producen eventos, rediciendo la carga del sistema y mejorando su desempeño.</li>
+  <li>El enlace de puntos permite definir un script opcional para poder transformar el valor de origen en múltiples formas.</li>
+  <li>La interfáz del enlace de puntos está contenida en una sóla página, haciendolo más fácil de configurar.</li>
+</ul>
+<p>
+  <b>Nota:</b> Los enlaces de puntos pueden ser configurados de tal forma que puede producirse un lazo infinito. El sistema puede detectar esos lazos en tiempo real,
+	detener su propagación y producir un evento de falla.
+</p>
+
+<h1>Lista de enlaces de puntos</h1>
+<p>
+	Para agregar un nuevo enlace de puntos hacer clic en el icono <img src="images/link_add.png"/>. Para modificar un enlace existente, hacer clic en la descripción
+	del mismo en la lista de enlaces de puntos.
+</p>
+
+<h1>Edición de enlaces de puntos</h1>
+<p>
+  <b>Exportar ID</b> es el valor usado para identificar el enlace de puntos a través de múltiples instancias del sistema. Es usado por la utilizad de Importar/Exportar.
+	Este valor debe ser único entre los enlaces de puntos. Este valor se genera de forma automática y aleatoria al cargar, aunque puede ser cambiado para ser
+	más intuitivo.
+</p>
+<p>
+	El <b>Punto de origen</b> es el punto a ser monitoreado para obtener su valor. Este es el punto <i>desde</i> donde viene el valor.
+</p>
+<p>El <b>Punto destino</b> es el punto a ser modificado con un valor calculado. Este es el punto <i>hasta</i> donde va el valor calculado.</p>
+<p>
+	El <b>Script</b> es un campo opcional que transformará el valor de origen según sea necesario. Se puede encontrar mayor información sobre scripts en la
+	documentación propiedades de meta puntos. El nombre de la variable contexto es "source", por lo que un script podría ser "return source.value/2;", esto
+	fijara en el punto de destino la mitad del valor del punto de origen. Note que la transformación de datos también puede hacerse de esta forma
+	"if (source.value &gt; 0) return true; return false;", lo que convertiría un valor de orígen numérico en un valor de destino binario. Haga clic en el
+	icono <img src="images/accept.png"/> para validar el script (el punto de origen debe estar disponible).
+</p>
+<p>
+	El <b>Evento</b> determina si el punto de destino es fijado cuando el punto de origen es actualizado (cuando recibe una nueva fecha/hora pero no
+	necesariamente un nuevo valor), o solo cuando el valor cambia (Se recibe una nueva fecha/ hora y valor).
+</p>
+<p>
+	Un enlace de puntos puede ser <b>Deshabilitado</b> para que este no corra. Esto puede ser muy útil si no se desea eliminar el enlace sino únicamente desactivarlo.
+  </p>
+
+<p>
+	Para guardar un enlace de punto hacer clic en el icono <img src="images/save.png"/> en la parte superior derecha. Para borrar un enlace existente hacer
+	clic en el icono <img src="images/delete.png"/>.
+</p>

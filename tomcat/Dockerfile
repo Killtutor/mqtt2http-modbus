@@ -3,10 +3,11 @@
 FROM tomcat:8-jre8
 
 # Copia tu carpeta ROOT personalizada al directorio webapps de Tomcat
-RUN ls -al
-COPY ./ROOT /usr/local/tomcat/webapps/ROOT
+
+COPY ./ROOT/ /usr/local/tomcat/webapps/ROOT/
 COPY ./env.vemetris /usr/local/tomcat/webapps/ROOT/WEB-INF/classes/env.properties
 COPY ./healthCheck.sh /healthCheck.sh
+RUN ls -al
 RUN chmod 777 -R /healthCheck.sh
 RUN chmod 777 -R /usr/local/tomcat/webapps/ROOT
 # RUN chmod 777 -R /usr/local/tomcat/webapps/ScadaBR1.2

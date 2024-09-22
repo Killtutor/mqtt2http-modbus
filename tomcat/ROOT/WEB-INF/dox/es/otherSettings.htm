@@ -1,0 +1,38 @@
+<!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ -->
+<p>
+	Rendimiento de la IU representa la capacidad de respuesta de la interfaz de usuario. Esto incluye todas las actividades que se gestionan a través de
+	el mecanismo de longPoll, como el indicador de alarma de nivel máximo, actualización de las listas de supervisión, actualizaciones de las listas de eventos, etc.
+	Si el servidor tiene una CPU limitada de energía, es posible que desee ajustar el rendimiento de interfaz de usuario a un nivel inferior para evitar que los usuarios
+	del sistema tengan un consumo excesivo de la CPU del servidor.
+</p>
+
+<p>
+	Utilice el ajuste de borrado de eventos para fijar la edad máxima de un evento antes de que se elimine de la base de datos. Se elimina
+	permanentemente el evento, así como los comentarios de los usuarios asociados.
+</p>
+
+<p>
+	Utilice el ajuste de borrado de informes para fijar de la edad máxima de una copia de reporte antes de que se elimine de la base de datos. Se elimina
+	permanentemente la instancia del reporte. Lo mejor es establecer este valor tan bajo como sea posible, ya que los informes pueden consumir una gran cantidad
+	del espacio de almacenamiento disponible. El borrado se puede prevenir seleccionando "no borrar" al crear la instancia del reporte.
+</p>
+
+<p>
+	Utilice el ajuste de borrado de mensajes de texto para fijar la edad máxima de un mensaje antes de que se elimine de la base de datos; este se eliminará
+	de forma permanente. El borrado se puede prevenir seleccionando "no borrar" en la lista de mensajes de texto de la sección "Dispositivos de mensajería".
+</p>
+
+<p>
+	Haga clic en <b>Borrar todos los datos</b> para eliminar de forma permanente todos los históricos de puntos almacenados en la base de datos.
+</p>
+
+<p>
+	Utilice la opción de descartar puntos de fecha futura para definir la cantidad máxima de tiempo en el futuro para que
+	los puntos de datos acepten valores nuevos. Los valores con marcas de tiempo que exceden este valor se desechan, y un error
+	mensaje se escribe en el registro. Esto se utiliza en sistemas que realizan cálculos predictivos entre otras cosas.
+</p>

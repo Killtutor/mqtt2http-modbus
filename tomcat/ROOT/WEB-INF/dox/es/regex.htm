@@ -1,0 +1,30 @@
+<!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ -->
+<p>
+	Las expresiones regulares (o RegEx) son la forma mas poderosa y concisa de analizar datos textuales. A pesar de que sus definiciones
+	inicialmente parecen incomprensibles, con un poco de experiencia se pueden resolver fácilmente un gran número de problemas de análisis de texto.
+	Diferentes implementaciones de RegEx a veces pueden tener ligeras diferencias en sus funciones. Puede encontrar un tutorial sobre las implementaciones
+	de Java RegEx
+  <a href="http://java.sun.com/docs/books/tutorial/essential/regex/" target="_blank">aquí</a>.
+</p>
+
+<p>
+	Muchos de los patrones RegEx utilizados en este sistema son similares. Típicamente la intención es localizar un valor particular en un texto.
+	Como tal, el modelo constará de prefijo y sufijo y cadenas que identifican únicamente el valor, y un patrón de grupo extrae el valor.
+	Por ejemplo, el texto a analizar podría ser algo como:
+</p>
+
+<pre>Este es un texto a analizar con el valor de 1234 colocado en la mitad,</pre>
+
+<p>Si el valor deseado es "1234", un patrón RegEx podría ser:</p>
+<pre>con el valor de (.*?) colocado</pre>
+
+<p>
+	El punto importante es que el prefijo (por ejemplo, "con el valor de ") y el sufijo (" colocado") nunca debe cambiar entre nuevas
+	instancias de el texto, y que únicamente definen la ubicación del valor deseado. En extremo, puede notar que el prefijo "de " y el sufijo " "
+	podrían funcionar en este caso, pero es menos probable que funcione en textos largos, o si el texto cambia significativamente.
+</p>

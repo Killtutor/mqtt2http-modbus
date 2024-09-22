@@ -1,0 +1,29 @@
+<h1>Visión general</h1>
+<p>
+  El modem serial es utilizado para enviar y recibir mensajes de texto (SMS) dentro del sistema, la comunicación se establece
+  mediante el estándar de comandos AT a través de puertos serial (físicos o virtuales).
+</p>
+
+<h1>Configuración</h1>
+<p>
+  <!--El <b>Pin</b> es el código de acceso a la tarjeta SIM del proveedor de la línea, si dicha verificación no se encuentra
+  activada, se puede omitir.-->
+  El <b>periodo de sincronización</b> determina la frecuencia en que el sistema verifica tanto
+  la cola de mensajes salientes como los mensajes entrantes u otras notificaciones por parte del modem serial. El <b>Timeout</b>
+  determina cuanto tiempo el sistema debe esperar por una respuesta por parte del modem y los <b>reintentos</b> la cantidad
+  de veces que el sistema debe intentar enviar un mensaje, si el envío resulta fallido el mensaje se enviará en el siguiente
+  dispositivo de mensajería de acuerdo al orden de prioridades. De no haber más dispositivos de mensajería instalados, se
+  intentará nuevamente el envío en la próxima sincronización.
+</p>
+<!--
+<p>
+  Para determinar el uso del puerto serial se puede <b>Mantener el puerto abierto</b> lo que permite que el modem serial sea
+  de uso exclusivo del sistema. Si se desactiva esta función el puerto se cerrará cuando no se encuentre en uso
+  (debe tomar en cuenta que si el puerto se encuentra cerrado no se podrán recibir mensajes SMS entrantes u otras notificaciones
+  por parte del modem serial).
+</p>
+-->
+<p>
+  La comunicación serial es controlada por los valores de <b>Tasa de bits</b>, <b>Bits de datos</b>, <b>Bits de parada</b>
+  y <b>Paridad</b>.
+</p>

@@ -1,0 +1,77 @@
+<!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ -->
+<h1>Visión general</h1>
+<p>
+	Esta utilidad puede ser usada para exportar e importar varios aspectos de la configuración del sistema. Esta habilidad provee muchos beneficios:
+</p>
+<dl>
+  <dt><b>Copia de seguridad y restauración</b></dt>
+  <dd>
+	Exporte completamente su configuración y guarde el texto resultante en un lugar seguro. Si su instancia del sistema sufre una falla catastrófica podrá
+	crear una nueva instancia e importar el archivo de configuración para recrear rapidamente la instancia.
+  </dd>
+  <dt><b>Crear y mantener instancias idénticas</b></dt>
+  <dd>
+	Exporte los elementos de su configuración que son comunes con otras instancias. Para crear una instancia similar, importe la configuración común y ajustela
+	según sea necesario. Para hacer cambios en todas sus instancias, simplemente modifique el archivo de configuración e impórtelo dentro de sus instancias. También
+	puede cambiar una instancia, exportar y luego importar el resultado dentro de las otras instancias.
+  </dd>
+  <dt><b>Mantener largas y complejas configuraciones</b></dt>
+  <dd>
+    Aunque es ampliamente elogiada por su estética y facilidad de uso, la interfaz de usuario del sistema no fue diseñada para manejar configuraciones extremadamente
+	grandes y complejas. En este caso, los archivos de exportación se pueden utilizar como un medio alternativo para la gestión de la configuración. Realice los
+	cambios directamente en el archivo de configuración, y luego impórtelo a las instancias.
+  </dd>
+</dl>
+
+<h1>Exportación</h1>
+<p>
+	Puede seleccionar para exportar toda la configuración seleccionando todas las opciones dentro de <b>Seleccione lo que desea exportar</b>. O puede seleccionar
+	sólo porciones a exportar según sea requerido. El resultado de la operación de exportación será mostrado en el área de texto <b>Datos</b>, desde el cual
+	podrá copiar y pegar donde quiera o realizar cambios directamente.
+</p>
+
+<h1>Importación</h1>
+<p>
+	Similar a cómo los usuarios pueden seleccionar qué exportar, también puede optar por importar sólo una parte pequeña de su configuración completa. En su mayor
+	parte la información que se excluye de su archivo de importación se mantendrá sin cambios. Por ejemplo, si los datos de importación no incluyen el atributo
+	"Detectores de eventos" dentro de un punto de datos, ese punto de la lista de detectores de eventos se mantendrá sin cambios. Sin embargo, si el atributo se
+	incluye en la lista será reemplazado con el contenido del mismo.
+</p>
+<p>
+	En general, cualquier objeto que tiene un identificador único es capaz de ser creado y actualizado, pero no eliminado. Tales objetos que son compatibles con
+	este servicio tendrán <b>Exportar ID o XID</b>. Este atributo está específicamente diseñado para brindar indentification única de objetos entre instancias del
+	sistema. Esto es similar a una base de datos generada por la clave primaria, pero las claves primarias no se pueden hacer para que coincidan más instancias
+	múltiples. Cuando un objeto, como un origen de datos se crea utilizando la interfaz de usuario se le asigna automáticamente un XID de instancia única.
+	Aunque no se puede garantizar que sea único en todas las instancias del sistema, hay una alta probabilidad de que lo sea. Usted puede cambiar el XID
+	para cualquier valor que guste de 50 caracteres, siempre que el valor sigua siendo único para ese tipo de objeto dentro de la instancia.
+</p>
+<p>
+  La importación puede fallar por varias razones:
+</p>
+<ul>
+  <li>
+    Si el formato de su JSON es incorrecto, toda la importación fallará y se mostrará un mensaje de error describiendo la causa y la ubicación probable de error
+	dentro de sus datos.
+  </li>
+  <li>
+	Si falta o no es válido un elemento, la importación asociada al objeto fallará, pero los otros objetos pueden importarse correctamente. Se le mostrará una lista
+	de objetos que fueron importados correctamente a una lista descriptiva de los errores para las fallas.
+  </li>
+</ul>
+
+<h1>Formato</h1>
+<p>
+	La utilidad importar/exportar usa el formato JSON (ver <a href="http://www.json.org/" target="_blank">http://www.json.org/</a>
+	para más información) como el formato de datos para los archivos de configuración. JSON es un formato muy fácil de usar y entender. (Los usuarios
+	familiarizados con Javascript JSON lo entenderán inmediatamente). Se ha seleccionado JSON contra el formato más común XML porque este provee
+	un mejor mapeo de la estructura del sistema actual y además es más compacto.
+</p>
+<p>
+	El sistema creará automáticamente archivos de exportación JSON "atractivos", por ejemplo, dara formato a la salida con saltos de línea apropiados y tabuladores.
+	Los tabuladores pueden ser controlados con el atributo <b>Nivel de tabulación</b>.
+</p>

@@ -1,0 +1,141 @@
+<!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ -->
+<h1>Visión general</h1>
+<p>
+	Todos los atributos de una vista gráfica y sus puntos asociados son modificables en la página del editor de vistas gráficas. Las vistas contienen una colección
+	de <b>Componentes</b> que pueden ser contenidos estáticos o dinámicos basados en uno o más puntos.
+</p>
+
+<h1>Atributos de vistas gráficas</h1>
+<p>
+	Todas las vistas gráficas tienen un nombre por el que son identificadas en la lista de vistas gráficas. Este nombre debería ser unico, aunque no es requerído.
+	Una vista opcionalmente puede contener una <b>Imagen de fondo</b> donde los componentes serán superpuestos. Los usuarios pueden usar cualquier tipo de imágenes
+	visualizables en un explorador incluyendo GIF, JPG y PNG. <b>Acceso anónimo</b> determina si se puede acceder a la vista sin ser usuario del sistema.
+	<b>Modificar</b> implica que el usuario anónimo puede fijar valores de puntos desde la vista. <b>Leer</b> implica que los usuarios anónimos únicamente tienen acceso
+	en modo de lectura. <b>Ninguno</b> significa que los usuarios anónimos no tendrán acceso.
+</p>
+
+<h1>Componentes</h1>
+<p>
+	Se pueden agregar componentes seleccionándolos en la lista y haciendo clic en el icono <img src="images/plugin_add.png"/>. Los componentes nuevos
+	por defecto se ubican en el centro de la vista, pero pueden ser arrastrados a otro lugar de la misma. Note que los componentes se pueden superponer unos a otros.
+	Durante la edición, los componentes son escritos de acuerdo al orden en que fueron definidos, esto puede afectar la forma en que los componentes se superponen.
+
+</p>
+
+<h1>Contenido estático</h1>
+<p>
+	Seleccione el tipo de componente <b>HTML</b> para agregar contenido estático. Por defecto el icono <img src="images/html_add.png"/> representa el contenido.
+	(Este icono será usado mientras no se defina el contenido) Dado que este componente es independiente de los valores de puntos, se carga sólo cuando carga
+	la vista y se mantiene constante a partir de entonces. Para modficiarlo, colocar el puntero encima para mostrar los controles de edición. Para cambiar el contenido
+	hacer clic en el icono(<img src="images/pencil.png"/>) e introdúzca un código HTML válido. El contenido será escrito de forma textual dentro de la vista, por
+	lo que se mostrará el código HTML (incluyendo cualquier contenido Javascript). Se pueden referenciar clases de estilos CSS o pueden ser definidos directamente.
+	Por ejemplo, para agregar una etiqueta se puede escribir lo siguiente:
+</p>
+<pre>
+  &lt;span style="background-color:yellow;font-size:25px;font-weight:bold;border:2px solid orange;"&gt;Mi etiqueta&lt;/span&gt;
+</pre>
+<p>
+	Esto mostraría lo siguiente: <span style="background-color:yellow;font-size:25px;font-weight:bold;border:2px solid orange;">Mi etiqueta</span>
+</p>
+
+<p>
+	Tambien se puede hacer referencia a contenido estático en otros servidores. Por ejemplo, imágenes externas dentro de las vistas:
+</p>
+<pre>
+  &lt;img src="http://bluebrain.epfl.ch/webdav/site/bluebrain/shared/21june_06_singleNeuron_200.jpg"/&gt;
+</pre>
+<p>
+	Esto mostraría lo siguiente: <img src="http://bluebrain.epfl.ch/webdav/site/bluebrain/shared/21june_06_singleNeuron_200.jpg"/>
+</p>
+
+<h1>Componentes de puntos</h1>
+<p>
+	Todos los demás componentes de la lista dependen de uno o más puntos para su representación. Una vez que el componente ha sido añadido, su
+	representación por defecto es la del punto genérico(<img src="images/icon_comp.png"/>). Este será el caso hasta que el componente tenga
+	suficiente información para representarse correctamente. La información requerida depende del tipo de componente. La página de edición
+	de vistas gráficas en este caso tiene el mismo comportamiento que el visor de vistas gráficas, es decir, que los componentes de punto
+	se verán de la misma forma, se actualizarán y mostrarán siempre los datos actuales.
+</p>
+
+<h1>Representación de los componentes de puntos</h1>
+<p>
+	La representación de los componentes de puntos se puede cambiar colocando el cursor sobre los controles de edición del punto. El panel mostrado
+	en la página de edición de vistas gráficas es diferente al mostrado en el visor de vistas, excepto por el control de información
+	(<img src="images/information.png"/>), que muestra el valor actual y la fecha/hora de la última actualización.
+</p>
+
+<p>
+	Los atributos de un componente de punto pueden ser fijados haciendo click en el icono de edición (<img src="images/plugin_edit.png"/>).
+	Esto mostrará un panel que permitirá modificar los atributos del punto dentro del contexto de la vista gráfica. Por ejemplo, si un
+	punto es normalmente modificable, en este panel podría ser modificado para que sea de sólo lectura dentro de la vista (aunque los
+	puntos de sólo lectura no pueden convertirse en modificables). En este panel es donde se selecciona además el punto que será utilizado
+	para la representación del componente. Sólo serán mostrados los puntos con el tipo de datos apropiados para el tipo de componente de puntos.
+</p>
+
+<p>
+	La representación gráfica de un componente puede ser modifciada haciendo clic en el icono <img src="images/graphic.png"/>. Esto mostrará
+	un panel que permitirá modificar los atributos de la representación gráfica del componente. Por ejemplo, el componente <b>Gráfico analógico</b>
+	puede ser utilizado para visualmente cuantizar un punto numérico. Usando los valores <b>Mín</b> y <b>Máx</b>, las imágenes se distribuyen de
+	forma uniforme dentro del rango numérico para mostrarse de forma apropiada. Un componente de <b>Gráfico binario</b> solo se aplica a puntos
+	binarios y permite ser representado por una o más imágenes dependiendo del estado actual del punto. También son soportadas las imágenes
+	animadas, estas pueden ser utilizadas para indicar una pieza o equipo se encuentra en movimiento o no. También se puede mostrar la representación
+	textual de un punto sobre estas imágenes seleccionado la opción <b>Mostrar texto</b>. Un <b>Punto simple</b> muestra únicamente la representación
+	textual del punto.
+</p>
+
+<p>
+	El componente <b>Gráfico dinámico</b> es similar al gráfico analógico que permite visualizar un punto numérico con una representación de imágen,
+	pero en este caso las imágenes son trazadas en forma dinámica dependiendo el valor del punto. Por ejemplo, con una imagen de fondo en forma de
+	galvanómetro, se puede dibujar la aguja de forma dinámica dependiendo del valor del punto.
+</p>
+
+<p>
+	Un componente <b>Script del lado del servidor</b> puede ser usado para definir su propia lógica de representación . El lenguaje de scripts utilizado
+	en este caso es Javascript, también conocido como ECMAScript. (La especificación completa de ECMAScript se encuentra
+	<a href="http://www.ecma-international.org/publications/standards/Ecma-262.htm" target="_blank">aquí</a>). Sin embargo no están disponibles los
+	objetos "window" o "document" ya que el script es compilado del lado del servidor y no en el explorador. En este caso, el valor actual del punto
+	se encuenta disponible en la variable <b>value</b> y la fecha/hora de la última muestra <b>time</b>. Además, las variables <b>pointComponent</b> y <b>point</b>
+	son definidas con valores analógicos, "htmlText" y "renderedText" representan las representaciones del valor. Finalmente, "events" provee una lista de los
+	eventos activos del punto y "hasUnacknowledgedEvent" es un valor binario que indica si al menos uno de los eventos activos no ha sido reconocido.
+</p>
+<p>
+	Cualquier valor puede ser devuelto desde el script, pero este será escrito palabra por palabra en el contenido de la vista del punto, en este caso
+	un texto html válido sería lo más apropiado. los tags también pueden ser incluidos, y serán detectados y ejecutados en el explorador. Por ejemplo, el
+	siguiente script mostrará un mensaje parpadeante cuando un punto binario tiene el valor de "1" (traducido a "true" por el script).
+</p>
+<pre>
+  if (value)
+      return '&lt;blink&gt;&lt;span style="background-color:orange;font-size:15px;font-weight:bold;"&gt;Advertencia: punto encendido&lt;/span&gt;&lt;/blink&gt;';
+  return "";
+</pre>
+<p>
+	Note que al final de la página, si el script no devuelve contenido, se mostrará el icono <img src='images/logo_icon.gif'/> de modo que los controles aún
+	pueden ser mostrados.
+</p>
+
+<p>
+	El valor de fecha/hora es proporcionado como la cantidad de milisegundos desde el 1 de Enero de 1970. Este puede ser convertido a objeto de fecha ECMA
+	con el siguiente código:
+</p>
+<pre>
+  var d = new Date();
+  d.setTime(time);
+</pre>
+<p>
+  El objeto "d" puede ser utilizado luego dentro del script.
+</p>
+
+<p>
+	los componentes pueden ser borrados haciendo clic en el icono (<img src="images/plugin_delete.png"/>), ubicado junto con el componente.
+</p>
+
+<h1>Guardado de las vistas gráficas</h1>
+<p>
+	Todos los cambios en una vista gráfica son guardados presionando el botón <b>Guardar</b>. Si se han hecho cambios incorrentos en la vista, estos pueden
+	ser abortados presionando el botón <b>Cancelar</b>. Para borrar la vista completa, presionar <b>Borrar</b>.
+</p>

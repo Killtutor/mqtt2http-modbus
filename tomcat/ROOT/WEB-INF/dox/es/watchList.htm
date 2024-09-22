@@ -1,0 +1,58 @@
+<!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ -->
+<h1>Visión general</h1>
+<p>
+	Una lista de supervisión es un conjunto de tablas de puntos donde se pueden ver todos a la vez. Los valores de los puntos y su fecha/hora se actualizan
+	automáticamente, no es necesario actualizar la página. (De hecho, el sistema funciona de manera más eficiente si no lo hace.)
+</p>
+
+<h1>Listas de supervisión</h1>
+<p>
+	Un usuario puede tener múltiples listas de supervisión, pero sólo puede ver una a la vez. Para crear una lista de supervisión nueva, haga clic en el icono <img src="images/add.png"/> en la esquina superior derecha
+	de la sección de lista de supervisión. Nuevas listas de supervisión se denominan "(sin nombre)" por defecto. Para cambiarle el nombre, colocar el puntero sobre el
+	icono <img src="images/pencil.png"/> para mostrar el panel de edición de nombre, escriba el nombre nuevo y pulse Intro o haga clic en
+	"Guardar" para guardar. Para eliminar una lista de supervisión, haga clic en el icono <img src="images/delete.png"/> en la esquina superior derecha de la
+	sección de lista de supervisión. Cada usuario debe tener al menos una lista de supervisión, por lo que el icono de borrar sólo aparece si hay
+	actualmente, más de una.
+</p>
+
+<h1>Puntos en las listas de supervisión</h1>
+<p>
+	Un punto puede pertenecer a múltiples listas de supervisión, por lo que puede crear listas tan específicas como sea necesario.
+</p>
+<p>
+	Los datos que se muestran en cada punto de la lista dependen de la configuración del mismo. Los puntos que se pueden modificar ( y
+	cuenta permiso para ello) mostrarán el icono <img src="images/icon_edit.png"/>. Al pasar el ratón sobre
+	de este icono se presentan la opciones de ajuste del punto. Los puntos que se han configurado para gráficos mostrarán el icono
+	<img src="images/icon_chart.png"/>. Al pasar el cursor sobre este icono, se presenta su componente gráfico actual. Los gráficos se actualizan
+	automáticamente, al igual que los valores y los tiempos cuando hay nuevos datos disponibles. Los puntos que contengan detectores de
+	eventos mostrarán el icono <img src="images/bell.png"/>, al hacer click sobre el mismo se mostrará una ventana donde podrán modificar
+	sus parámetros.
+</p>
+<p>
+	La casilla de verificación de cada punto determina si aparecerá en la gráfica de la parte inferior de la
+	página. (Si se marca, aparecerá, dependiendo del tipo de datos.) El icono
+	<img src="images/icon_comp.png"/> le llevará a la página de detalles del punto seleccionado. Ambos iconos sólo estarán activos si el punto
+	cuenta con almacenamiento de históricos.
+</p>
+<p>
+	Para ordenar los puntos en la lista, utilice los iconos de movimiento. Al hacer clic en <img src="images/arrow_down_thin.png"/>
+	el punto se desplaza hacia abajo en la lista, mientras que en <img src="images/arrow_up_thin.png"/> se desplaza hacia arriba.
+</p>
+<p>
+	Para añadir puntos a la lista actual, haga clic en el nombre de punto en la sección <em>Puntos</em>. Los puntos se añadirán en la
+	parte inferior de la lista. Para quitar los puntos, haga clic en el icono de extracción <img src="images/bullet_delete.png"/> al lado derecho
+	de cada punto. Al hacer clic en este icono se elimina el punto de la lista de supervisión actual pero no se elimina
+	el punto del sistema. No confunda el icono de eliminar punto (a la derecha de cada punto) con el icono de eliminar lista de supervisión en la esquina
+	superior derecha.
+</p>
+
+<h1>Resaltado de puntos</h1>
+<p>
+	Los valores de los puntos y sus fechas/horas resaltan brevemente cuando cambian. Típicamente suelen resaltar más las fechas/horas ya que el valor de punto no
+	necesariamente debe cambiar en cada muestra.
+</p>

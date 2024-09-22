@@ -1,0 +1,77 @@
+<!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ -->
+<h1>Visión general</h1>
+<p>
+	Las plantillas de informes definen como deben crearse las instancias de informe. Para una descripción de plantillas vs instancias ver la documentación
+	"Instancias de informe".
+</p>
+
+<h1>Lista de plantillas de informes</h1>
+<p>
+	Para agregar una nueva plantilla de informe, hacer clic en el icono <img src="images/report_add.png"/>. Para modificar una plantilla existente, hacer clic
+	en su nombre ubicado en la lista de plantillas de informes.
+</p>
+
+<h1>Edición de una plantilla de informe</h1>
+<p>
+	El <b>nombre</b> de una plantilla es usado como una referencia visual de la misma. Es recomendado que sea utilizado un nombre único para cada detector pero
+	no es necesario.
+</p>
+<p>
+	Utilice la lista de  <b>Puntos</b> para seleccionar los que serán incluidos en el informe. Para agregar un punto, seleccionarlo de la lista y hacer clic en el
+	icono <img src="images/add.png"/>. Para borrar un punto hacer clic en el icono <img src="images/bullet_delete.png"/> asociado al punto.
+</p>
+<p>
+  Los valores de <b>Color</b> pueden ser HEX estilo HTML, o cualquier nombre de color dentro de la especificación HTML. Por ejemplo, "#2468AC",
+  "red", y "dodgerblue" serían valores válidos.
+</p>
+<p>
+  <b>Gráfico consolidado</b> determina si el punto aparecerá en el gráfico consolidado del informe o no.
+</p>
+<p>
+	El <b>Rango de datos</b> es utilizado para determinar qué valores serán seleccionados para el informe. El rango puede ser relativo o absoluto.
+	En la mayoría de los casos el rango relativo sería el más apropiado. Los rangos de fechas relativas pueden ser basados en datos "Anteriores" o
+	"pasados". Un rango <b>pasado</b> incluye el periodo de tiempo contado desde la hora exacta del inicio del informe hacia atrás. Un rango <b>Anterior</b> incluye
+	el periodo dado, pero que termina de acuerdo al tipo de periodo. Por ejemplo, si el tipo de periodo es "hora(s)", el número es 1, y el informe se inicia a
+	las 06:05, el periodo será desde las 05:00 (inclusivo) hasta las 06:00 (exclusivo). Si el número fuera 3, el período sería desde las 03:00 hasta las 06:00.
+	De forma similar, cuando se selecciona 1 "mes(es)", este se iniciaría a la media noche del primer día del mes previo y terminaría el último día del mes previo
+	a la medianoche (exclusivo). Los otros periodos de tiempo funcionan de la misma forma. La semana se inicia el lunes a la medianoche de acuerdo a los estándares ISO.
+</p>
+
+<h1>Informes programados</h1>
+<p>
+	Los informes pueden ser programados para iniciarse automáticamente. Seleccione <b>Ejecutar cada...</b> para determinar el instante
+	tiempo en que debería iniciarse, o definir un patrón cronológico para control más específico (Ver la documentación "Patrones cronológicos" para más información).
+	El informe se produce al inicio del periodo dado. Las semanas se inician el Lunes, de acuerdo a las normas ISO. Se puede aplicar una <b>demora en ejecución</b>
+	si los datos que se quieren en el informe tienden a ser recibidos con retraso respecto al tiempo de inicio absoluto.
+</p>
+<p>
+	Los informes programados para usuarios deshabilitados no se ejecutan.
+</p>
+
+<h1>Informe por correo electrónico</h1>
+<p>
+	Aunque los informes no pueden ser compartidos de forma explícita dentro del sistema, si pueden ser compartidos de forma implícita creando listas de correo
+	para enviarles las instancias de informes. El contenido del correo sería el mismo que se muestra al abrir la ventana contenido del informe desde la cola de informes.
+	Para incluir un archivo CSV con los datos en forma tabular, seleccionar <b>Incluir datos de tabla</b>.
+</p>
+<p>
+	Seleccionar los <b>Destinatarios del correo</b> a quienes les será enviado el informe por correo. Los destinatarios pueden ser listas de correo, usuarios o
+	direcciones de correo específicas. Para enviar un correo de prueba hacer clic en el icono <img src="images/email_go.png"/>.
+</p>
+<p>
+  <b>Importante</b>: Las instancias de informe que son enviadas por correo se borran de forma automática del sistema una vez enviadas.
+</p>
+
+<h1>Gestión de plantilla</h1>
+<p>
+	Para guardar una plantilla, hacer clic en el icono <img src="images/save.png"/> en la parte superior derecha del panel.
+	Para borrar una plantilla existente, hacer clic en el icono <img src="images/delete.png"/>. Para ejecutar una plantilla inmediatamente, hacer clic en el icono
+	<img src="images/report_go.png"/>. Note que algunas plantillas de informes incluyen una gran cantidad de información, por lo que puede tomar algún tiempo en
+	ejecutarse. El motor de informes funciona de forma asincrónica con la interfaz de usuario, por lo que puede seguir navegando por el sistema mientras espera.
+	Para crear una copia de la plantilla, hacer clic en el icono <img src="images/report_add.png"/>.
+</p>

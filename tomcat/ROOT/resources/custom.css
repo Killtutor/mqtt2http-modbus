@@ -1,0 +1,20 @@
+#mainHeader {
+    background-color: #FF0000;
+    height: 100px;
+    text-align: left;
+}
+
+#mainLogo {
+    margin: 0px;
+    margin-left: 25px;
+    height: 75px;
+}
+
+#bannerText {
+	font-size: 35px;
+	color: white;
+	display: inline-block;
+	position: absolute;
+	margin-top: 40px;
+	margin-left: 15px;
+}

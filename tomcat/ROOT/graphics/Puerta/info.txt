@@ -1,0 +1,6 @@
+name=Puerta Abierta/Cerrada
+type=imageSet
+#width=227
+#height=161
+text.x=11
+text.y=-19

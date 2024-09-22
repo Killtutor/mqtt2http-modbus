@@ -1,0 +1,22 @@
+<!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ -->
+<h1>Visión general</h1>
+<p>Los publicadores pueden ser considerados lo opuesto a una fuente de datos. En lugar de la recolección de datos en el sistema, los publicadores envian los datos
+	hacia afuera. Esto puede ser útil cuando se usa el sistema para recopilar información de sistemas dispares con el fin de modificar, limpiar o manejar, y luego
+	enviarlo en un formato común a otros sistemas. De esta manera, el sistema no es sólo M2M, sinó M2M2M. Los publicadores incluso pueden ser utilizados para enviar
+	datos a otras instancias del sistema, como la consolidación de datos entre instancias de campo en una sede central. En efecto, la instancia del sistema se
+	puede utilizar para controlar los publicadores entre sí en muchos aspectos.</p>
+
+<h1>Editor de configuración común</h1>
+<p>Cada publicador tiene un <b>Nombre</b> que es usado para identificarlo visualmente en la lista. Se recomienda que cada publicador tenga un nombre único,
+	sin embargo no es requerido. La casilla <b>Habilitado</b> es utilizada para habilitar o deshabilitar el publicador.</p>
+<p>Los publicadores utilizan memoria caché para garantizar que todas las actualizaciones de punto se entregan a su destino. Si el destino por cualquier razón no acepta
+	estas entregas durante un período prolongado de tiempo, esta caché puede llegar a ser muy grande. Si la publicación siempre falla nunca se limpian los datos
+	de la caché (excepto en la desactivación del publicador), pero se puede definir el <b>Tamaño del caché de alerta</b> lo que provoca una alarma cada vez se supera
+	este tamaño. Esta alarma vuelve a la normalidad cuando el tamaño de caché ya no excede el tamaño de advertencia, o cuando el publicador está desactivado.</p>
+
+<p><b>Actualizar evento</b> determina cuando se deben enviar las actualizaciones de punto.</p>

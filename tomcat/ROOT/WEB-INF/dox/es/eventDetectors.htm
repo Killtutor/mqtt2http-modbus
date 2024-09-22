@@ -1,0 +1,97 @@
+<!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ -->
+<h1>Visión general</h1>
+<p>
+  	El propósito de un detector de evento es determinar si el valor de un punto satisface una o más condiciones relacionadas, y generar un evento
+	que puede ser adecuadamente manejado. Un punto puede tener un número ilimitado de detectores de eventos. Las formas en que los eventos pueden ser
+	detectados dependen del tipo de datos del punto, y por ello sólo se enumeran los tipos de detectores de eventos soportados por el punto.
+</p>
+<p>
+  	Los detectores de eventos pueden detectar un gran número de condiciones, pero sólo se aplican a un único punto. Si se requieren condiciones a través
+	de múltiples puntos o condiciones que incluyan eventos programados, se deben utilizar detectores de eventos compuestos. (Ver la documentación "Detector
+	de eventos compuestos" para más información).
+</p>
+<p>
+	Un punto puede tener tantos detectores como sea necesario, y puede tener múltiples detectores del mismo tipo. (Es decir, múltiples
+	detectores de límite superiores o inferiores.)
+</p>
+<p>
+  	Para agregar un nuevo detector debe seleccionar el <b>Tipo</b> y hacer clic en el icono <img src="images/bell_add.png"/>. Nota: para guardar los detectores
+	de eventos debe hacer click en el botón "Guardar" ubicado en la parte inferior de la página. Para borrar un detector de eventos existente hacer click en
+	el icono <img src="images/bell_delete.png"/> asociado al detector.
+</p>
+<p>
+	Cada detector tiene asociado un <b>Nivel de alarma</b>. Esto determina si se genera una alarma al activarse el detector de eventos y la gravedad
+	de la misma. Consulte la página de ayuda general para obtener información sobre las alarmas.
+</p>
+
+<h1>Límite superior</h1>
+<p>
+	Este detector se aplica sólo a los puntos numéricos. El <b>límite superior</b> es el valor por encima del cual el detector se convierte en
+	activo. El detector se puede configurar opcionalmente con una <b>Duración</b>; el valor del punto debe mantenerse por encima del límite superior
+	durante el tiempo establecido para que el detector se convierta en activo. Los eventos producidos por este detector volverán a la
+	normalidad cuando dejen de cumplirse estas condiciones.
+</p>
+
+<h1>Límite Bajo</h1>
+<p>
+	Este detector se aplica sólo a los puntos numéricos. El <b>límite inferior</b> es el valor por debajo del cual el detector se convierte en
+	activo. El detector se puede configurar opcionalmente con una <b>Duración</b>; el valor del punto debe mantenerse por debajo del límite inferior
+	durante el tiempo establecido para que el detector se convierta en activo. Los eventos producidos por este detector volverán a la
+	normalidad cuando dejen de cumplirse estas condiciones.
+</p>
+
+<h1>Cambio</h1>
+<p>
+  	Este detector se aplica a todos los tipos de datos. Se provoca un evento cada vez que cambia el valor del punto. Este tipo de eventos no vuelven
+	automáticamente a la normalidad.
+</p>
+
+<h1>Sin cambios</h1>
+<p>
+	Este detector se aplica a todos los tipos de datos. Se genera un evento cuando el valor no ha cambiado durante el tiempo establecido por
+	<b>Duración</b>. Esto puede ser útil para detectar cuando el equipo está funcionando mal. Los eventos producidos por este detector vuelven
+	automáticamente a la normalidad cuando ya no se cumple esta condición.
+</p>
+
+<h1>Sin actualización</h1>
+<p>
+	Este detector se aplica a todos los tipos de datos. Se genera un evento cuando el valor no ha sido actualizado durante el tiempo establecido por
+	<b>Duración</b>. (Un cambio requiere que el valor de la nueva muestra de un punto sea diferente a la anterior. Una actualización sólo requiere que el tiempo de
+	la nueva muestra de un punto sea diferente a la anterior). Esto puede ser útil para detectar cuando el equipo está funcionando mal. Los eventos producidos
+	por este detector vuelven automáticamente a la normalidad cuando ya no se cumple esta condición.
+</p>
+
+<h1>Estado</h1>
+<p>
+	Este detector se aplica a puntos binarios, multiestados y alfanuméricos. Se activa cada vez que el punto entra en el <b>Estado</b> seleccionado.
+	El detector se puede configurar opcionalmente con una <b>Duración</b>; El valor del punto debe permanecer en el estado durante el tiempo establecido
+	para que el detector se convierta en activo. Los eventos producidos por este detector vuelven automáticamente a la normalidad cuando ya no se cumple esta condición.
+</p>
+
+<h1>Cantidad de cambios de estado</h1>
+<p>
+	Este detector se aplica a puntos binarios, multiestados y alfanuméricos. Se activa cuando la <b>Cantidad de cambios de estado</b> supera la cantidad establecida
+	dentro del intervalo de tiempo establecido por <b>Duración</b>. Los eventos producidos por este detector vuelven automáticamente a la normalidad cuando ya no se
+	cumple esta condición.
+</p>
+
+<h1>Suma acumulada positiva</h1>
+<p>
+	Este detector se aplica sólo a los puntos numéricos. El <b>límite positivo</b> es el valor de suma acumulada por encima del cual el detector se convierte en
+	activo, y el <b>Peso</b> es el valor de peso constante a usar para el cálculo de la suma acumulada. El detector se puede configurar opcionalmente con una
+	<b>Duración</b>; la suma acumulada debe mantenerse por encima del límite positivo durante el tiempo establecido para que el detector se convierta en activo.
+	Los eventos producidos por este detector volverán a la normalidad cuando dejen de cumplirse estas condiciones.
+</p>
+
+<h1>Suma acumulada negativa</h1>
+<p>
+	Este detector se aplica sólo a los puntos numéricos. El <b>límite negativo</b> es el valor de suma acumulada por debajo del cual el detector se convierte en
+	activo, y el <b>Peso</b> es el valor de peso constante a usar para el cálculo de la suma acumulada. El detector se puede configurar opcionalmente con una
+	<b>Duración</b>; la suma acumulada debe mantenerse por debajo del límite negativo durante el tiempo establecido para que el detector se convierta en activo.
+	Los eventos producidos por este detector volverán a la normalidad cuando dejen de cumplirse estas condiciones.
+</p>

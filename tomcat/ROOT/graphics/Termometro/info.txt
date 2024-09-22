@@ -1,0 +1,6 @@
+name=Termometro
+type=imageSet
+#width=34
+#height=99
+text.x=-9
+text.y=76

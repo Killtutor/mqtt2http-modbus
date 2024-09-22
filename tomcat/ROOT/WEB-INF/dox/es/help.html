@@ -1,0 +1,82 @@
+
+<p>A continuación se muestra una visión general de cómo funciona esta aplicación y los conceptos de diseño que los usuarios deberían conocer. También se
+	pueden encontrar detalles útiles a lo largo de la aplicación usando ayudas contextuales indicadas por el icono <img src="images/help.png">. Para obtener
+	más información sobre una función en particular, hacer clic en ese icono.</p>
+
+<h1>Visión general de la aplicación</h1>
+<p>Se puede acceder a la funcionalidad de esta aplicación a través de los controles mostrados en la cabecera de cada página. Dependiendo de los permisos de su cuenta
+	de usuario, usted tendrá varios iconos disponibles. Cuando coloque el mouse sobre cada uno de estos iconos podrá ver una breve descripción
+	para lo que funciona cada uno.</p>
+
+<p>En la parte superior izquierda de la página se encuentra el nombre del usuario que actualmente se encuentra conectado al sistema.</p>
+
+<p>Cuando la aplicación tiene pendiente alguna alarma, podrá ver en la parte superior central de la página un icono de bandera (<img src="images/flag_white.png"/>)
+	y su descripción asociada. El color del icono determina la gravedad de la alarma:</p>
+<ul style="list-style-type:none;">
+  <li><img src="./images/flag_blue.png"> Información</li>
+  <li><img src="./images/flag_yellow.png"> Urgente</li>
+  <li><img src="./images/flag_orange.png"> Crítica</li>
+  <li><img src="./images/flag_red.png"> Riesgo extremo</li>
+</ul>
+<p>Puede hacer clic tanto en el icono como en la descripción para acceder a la lista de alarmas pendientes.</p>
+
+<h1>Puntos de datos</h1>
+<p>Un <b>punto de datos</b> es una colección de valores físicos asociados. Por ejemplo, un punto particular podría tener una temperatura leída desde una
+	habitación, mientras que otro punto podría tener la humedad leída desde la misma habitación. Los puntos también pueden ser valores de control, como un interruptor
+	que encienda o apague un equipo.</p>
+<p>Algunos puntos de datos cuentan con <b>detectores de eventos</b>, que son usados para determinar algunas condiciones de interés dependiendo del valor
+	del punto (por ejemplo, el valor ha sido muy alto por mucho tiempo, el valor es muy bajo, cambia muy rápido, etc.).</p>
+<p>Los puntos son ordenados dentro de una jerarquía, o árbol, para simplificar el manejo y la forma en que se muestran.</p>
+
+<h1>Monitoreo</h1>
+<p>El monitoreo de puntos dentro del sistema puede darse en dos formas. Puede usar las <b>listas de supervisión</b> para crear listas tabulares de
+	puntos incluyendo sus valores, fecha/hora de la última actualización y gráficos con información de históricos (si el punto es configurado para soportar esto).
+	Los valores y sus gráficos son actualizados en tiempo real sin la necesidad de refrescar el explorador. Se pueden mostrar gráficas de múltiples puntos según
+	la necesidad.</p>
+
+<p>Además puede acceder a <b>Vistas gráficas</b> que contienen imágenes para mostrar una visualización dinámica del comportamiento del sistema monitoreado y
+	al igual que en las listas de supervisión, los valores son actualizados en tiempo real sin la necesidad de actualizar la ventana del explorador.</p>
+
+<h1>Informes</h1>
+<p>Se pueden configurar plantillas para generar instancias de informes de forma manual o programada. Estos informes presentan información relacionada con puntos
+de datos dentro del sistema, incluyendo gráficos, eventos y comentarios de usuario. Los informes se pueden enviar automáticamente por correo electrónico dependiendo
+de la configuración del mismo.</p>
+
+<h1>Eventos</h1>
+<p>
+	Un evento es la ocurrencia de una condición definida dentro del sistema. Se encuentran disponibles eventos definidos tanto por el sistema como por el usuario.
+	Los eventos definidos por el sistema incluyen errores de operación en puntos de datos, inicio de sesión de usuarios, encendido o apagado del sistema.
+	Los eventos definidos por el usuario incluyen los detectores de eventos para puntos de datos. Existen además "eventos de auditoría" que se producen cuando los
+	usuarios realizan cambios (adiciones, modificaciones, borrados) que afectan en tiempo real objetos como puntos, detectores de eventos de puntos, dispositivos
+	de mensajería. En la sección de usuarios se puede configurar qué eventos se desean recibir por correo electrónico y mensajería de texto de acuerdo a su nivel de alarma.
+</p>
+
+<h1>Iconos de la aplicación</h1>
+<ul style="list-style-type:none;">
+  <li><img src="images/icon_ds.png"> Fuente de datos</li>
+  <li><img src="images/icon_comp.png"> Punto de datos</li>
+  <li><img src="images/icon_chart.png"> Gráfico</li>
+  <li><img src="images/icon_edit.png"> Fijar punto</li>
+  <li><img src="images/eye.png"> Lista de supervisión</li>
+  <li><img src="images/icon_view.png"> Vista gráfica</li>
+  <li><img src="images/control_repeat_blue.png"> Actualizar</li>
+  <li><img src="images/bell.png"> Detector de eventos</li>
+  <li><img src="images/multi_bell.png"> Detector de eventos compuestos</li>
+  <li><img src="images/clock.png"> Evento programado</li>
+  <li><img src="images/cog.png"> Manejador de eventos</li>
+  <li><img src="images/flag_white.png"> Alarma</li>
+  <li><img src="images/user.png"> Usuario</li>
+  <li><img src="images/comment.png"> Comentario de usuario</li>
+  <li><img src="images/report.png"> Informe</li>
+  <li><img src="images/book.png"> Lista de correo</li>
+  <li><img src="images/book_green.png"> Lista de teléfonos móviles</li>
+  <li><img src="images/transmit.png"> Publicador</li>
+  <li><img src="images/phone.png"> Dispositivos de mensajería</li>
+  <li><img src="images/warn.png"> Alerta</li>
+  <li><img src="images/control_stop_blue.png"> Salir del sistema</li>
+</ul>
+
+<h1>Sonidos de alarma</h1>
+<p>El sistema puede reproducir sonidos cuando se activan alarmas. Existen sonidos para alarmas urgentes, críticas, y riesgo extremo (no para alarmas de
+	información). En parte derecha de la cabecera de todas las páginas se muestra las opciones para desactivar/activar el sonido de la alarma general del sistema y
+	en la sección de alarmas se pueden desactivar/activar los sonidos para cada alarma individualmente.</p>

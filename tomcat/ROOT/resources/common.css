@@ -1,0 +1,516 @@
+/*
+    Mango - Open Source M2M - http://mango.serotoninsoftware.com
+    Copyright (C) 2006-2011 Serotonin Software Technologies Inc.
+    @author Matthew Lohbihler
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+html > body {
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 11px;
+    color: #000000;
+    background-color: #E1E6E6;
+    margin: 0px;
+    padding: 0px;
+}
+a, a:visited, a:link, .link {
+    color: #125987;
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    text-decoration: underline;
+    font-size: 11px;
+}
+a:hover {
+    color: #51A6CD;
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    text-decoration: underline;
+    font-size: 11px;
+}
+a.titleLink, a.titleLink:visited, a.titleLink:link {
+    font-size: 11px;
+    font-weight: bold;
+}
+a.titleLink:hover {
+    font-size: 11px;
+    font-weight: bold;
+}
+.bigTitle {
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    color: #333333;
+    font-size: 16px;
+    font-weight: bold;
+}
+.smallTitle {
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    color: #125987;
+    font-size: 13px;
+    font-weight: bold;
+}
+.titlePadding {
+    padding:3px 3px 0px 3px;
+}
+.copyTitle {
+    color: #125987;
+    font-size: 10px;
+}
+.bodyCopy {
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    color: #333333;
+    font-size: 11px;
+}
+.footer {
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    color: #333333;
+    font-size: 9px;
+    width:100%;
+    margin-bottom:10px;
+    clear:left;
+}
+.footer div {
+    margin:0px auto;
+    text-align:center;
+}
+.ptr {
+    cursor: pointer;
+}
+
+
+/**
+ * Header styles
+ */
+#fixedHeader{
+    z-index:9000;
+    position:fixed;
+    display:table;
+}
+#fixedHeaderBack{
+    position:relative;
+}
+#fixedHeader, #fixedHeaderBack {
+    top:0px;
+    left:0px;
+    min-width:800px;
+    width:100%;
+    height:30px;
+    background:#f0f0f0;
+}
+#fixedHeaderC1 {
+    margin:0px auto;
+    display:table-cell;
+    text-align:left;
+    width:40%;
+    padding-left:10px;
+    padding-top:5px;
+}
+#fixedHeaderC2 {
+    margin:0px auto;
+    display:table-cell;
+    text-align:center;
+    width:20%;
+}
+#fixedHeaderC3 {
+    margin:0px auto;
+    display:table-cell;
+    text-align:right;
+    width:40%;
+    padding-right:10px;
+    padding-top:5px;
+}
+#__header__alarmLevelText {
+    font-weight: bold;
+    font-size: 14px;
+}
+#mainHeader {
+    background-color: #0052a0;
+    position:relative;
+    width:100%;
+    margin:0px;
+    padding:0px;
+    text-align:center;
+    height:110px;
+}
+
+
+/**
+ * Navigation bar
+ */
+#navBar ul{
+    list-style:none;
+    width:100%;
+    height:38px;
+    background-color:#BFC3C3;
+    padding: 0;
+    margin:0px auto;
+    text-align:center;
+}
+#navBar ul li{
+    margin-top:3px;
+    margin-right:1px;
+    margin-bottom:3px;
+    display:inline-block;
+}
+
+ #captchaImg {
+    border:1px solid #51a6cd;
+    padding: 1px;
+ }
+
+/**
+ * List cell styles.
+ */
+.table{
+    border-spacing:1px;
+    border:1px;
+}
+.rowHeader td, .smRowHeader td, .row td, .smRow td, .rowAlt td, .smRowAlt td, .rowAlt2 td {
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 11px;
+}
+.rowHeader td, .smRowHeader td {
+    font-weight: bold;
+    color: #FFFFFF;
+    background-color: #51A6CD;
+    text-align: center;
+    white-space: nowrap;
+}
+.rowHeader td {
+    padding: 3px 10px 3px 10px;
+}
+.smRowHeader td {
+    padding: 2px 3px 2px 3px;
+}
+a.rowHeaderLink, a.rowHeaderLink:visited, a.rowHeaderLink:link, a.rowHeaderLink:hover {
+    color: #FFFFFF;
+    text-decoration: underline;
+}
+.row td, .smRow td, .rowAlt td, .smRowAlt td, .rowAlt2 td {
+    color: #000000;
+}
+.row td, .rowAlt td, .rowAlt2 td {
+    padding: 3px;
+}
+.smRow td, .smRowAlt td {
+    padding: 0px 3px 0px 3px;
+}
+.row td, .smRow td {
+    background-color: #F0F0F0;
+}
+.rowAlt td, .smRowAlt td {
+    background-color: #DCDCDC;
+}
+.rowAlt2 td {
+    background-color: #FFFFFF;
+}
+
+.borderDiv, .borderDivPadded {
+    border: 1px solid #51A6CD;
+}
+.borderDivPadded {
+    padding: 3px;
+}
+.marR {
+    margin-right: 5px;
+}
+.marB {
+    margin-bottom: 5px;
+}
+
+
+
+/**
+ * Form styles
+ */
+.formLabel, .formLabelRequired, .formField, .formError, select, input, textarea {
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 11px;
+}
+.formLabel, .formLabelRequired {
+    color: #333333;
+    padding-right: 10px;
+    text-align: right;
+    white-space: nowrap;
+    padding-top: 5px;
+    vertical-align: top;
+}
+.formLabelRequired, .formError {
+    font-weight: bold;
+}
+.formField {
+    padding: 2px;
+    color: #333333;
+}
+.formError {
+    color: #FF0000;
+    padding-left: 10px;
+}
+.hiddenTextarea {
+    border: 0px;
+    outline:none;
+    background-color: #e1e6e6;
+    font-weight: bold;
+    text-align: right;
+}
+.hiddenTextarea:focus{
+    border: 1px solid #51A6CD;
+    padding: 2px;
+    background-color: #FFFFFF;
+    text-align: left;
+}
+select, input, textarea {
+    color: #333333;
+    border: 1px solid #51A6CD;
+    padding: 2px;
+}
+input[type="checkbox"], input[type="radio"] {
+    color: #51A6CD;
+    border: 0;
+}
+.formVeryShort {
+    width: 30px;
+}
+.formShort {
+    width: 50px;
+}
+.formLong {
+    width: 250px;
+}
+.formDisabled {
+    border: 1px solid #D0D0D0;
+}
+input[type="submit"], input[type="button"] {
+    overflow: visible;
+}
+
+
+
+/**
+ * View styles
+ */
+.controlsDiv {
+    position: absolute;
+    visibility: hidden;
+    left: 0;
+    top: -1px;
+    z-index: 1;
+    margin: 1px 0px 1px 0px;
+    padding: 0;
+    background-color: #FFFFFF;
+}
+.controlsDiv table {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    background-color: #125987;
+}
+.controlsDiv td {
+    list-style: none;
+    margin: 1px;
+    padding: 0;
+    background-color: #51A6CD;
+    width: 16px;
+    height: 16px;
+}
+.controlsDiv td div, .controlContent {
+    padding: 1px 5px 1px 5px;
+    margin: 0px;
+    background: #51A6CD;
+    white-space: nowrap;
+    text-align: left;
+    font-size: 10px;
+    font-weight: normal;
+    border: 1px solid #125987;
+    position: absolute;
+    visibility:hidden;
+    left: 15px;
+    top: 0px;
+}
+
+.labelDiv, .windowDiv {
+    position:absolute;
+    padding:1px 5px 1px 5px;
+    margin:0px;
+    background:#51A6CD;
+    white-space:nowrap;
+    text-align:left;
+    font-size: 10px;
+    font-weight: normal;
+    z-index: 20;
+}
+.labelDiv {
+    border:1px solid #125987;
+}
+.windowDiv {
+    border:1px outset #51A6CD;
+}
+.labelDiv a, .windowDiv a {
+    font-size: 10px;
+}
+.borderWindowDiv {
+    border:1px solid #125987;
+}
+.imageDiv {
+    z-index:10;
+    left:18px;
+    position:absolute;
+    padding:0px;
+    margin:0px;
+    background:#51A6CD;
+    white-space:nowrap;
+    border:1px solid #51A6CD;
+}
+.ovrflw {
+    background:inherit;
+    background:expression(this.parentNode.style.background);
+    color:inherit;
+    color:expression(this.parentNode.style.color);
+    font:inherit;
+    font:expression(this.parentNode.style.font);
+    width:300px;
+    border-width:0 1px 0 1px;
+    border-style:solid;
+    border-color:#51A6CD;
+}
+#viewContent {
+    position:relative;
+    margin: 0px;
+    padding: 0px;
+}
+#viewContent img {
+    display: block;
+    margin: 0px;
+    padding: 0px;
+}
+.componentMin {
+    background-color: #51A6CD;
+    top:0px;
+    left:0px;
+    margin:0px;
+    padding:0px;
+    width:16px;
+    height:16px;
+}
+.componentInput {
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 10px;
+    color: #333333;
+    border: 1px solid #51A6CD;
+    padding: 1px;
+}
+.simpleRenderer, .simpleRenderer2 {
+    border:1px solid #125987;
+    padding:1px 5px 1px 5px;
+    margin:0px;
+    background:#51A6CD;
+    white-space:nowrap;
+    text-align:left;
+    font-size: 10px;
+    font-weight: normal;
+}
+.simpleRenderer {
+    line-height:16px;
+}
+.infoData {
+    color: #FF0000;
+}
+.horzSeparator {
+    height: 1px;
+    background: #51A6CD;
+    padding: 0px;
+}
+.viewChangeBkgd {
+    background: #D8E2CC;
+}
+
+
+/**
+ * Absmiddle workaround
+ */
+span.absmiddle img {
+    padding: 0;
+    margin: 0;
+    vertical-align: middle;
+/*  display: inline-block; */
+    display: inline;
+}
+
+
+/**
+ * Documentation float pane style overrides.
+ */
+html > body .dijitDialogPaneContent {
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 10px;
+}
+html > body .dijitDialogPaneContent p, #help p {
+    padding: 0px;
+    margin: 0px 0px 10px 0px;
+}
+#help h1 {
+    color: #125987;
+    font-size: 15px;
+    font-weight: bold;
+    padding: 0px;
+    margin: 20px 0px 10px 0px;
+}
+html > body .dijitDialogPaneContent h1, #help h2 {
+    padding: 0px;
+    margin: 0px 0px 10px 0px;
+    font-size: 13px;
+    font-weight: bold;
+}
+html > body .dijitDialogPaneContent img, #help img {
+    vertical-align: bottom;
+}
+
+/**
+ * Common tree styling
+ */
+html > body .dojoTreeNodeLabelSelected {
+    background-color: #51A6CD;
+    color: #FFFFFF;
+    padding: 2px 3px 3px 2px;
+}
+
+
+/**
+ * Styles for weekly 15 minute interval schedules.
+ */
+.qoff {
+    /*background-color: #B4CE96;*/
+    background-color: #FF4000;
+}
+.qon {
+    /*background-color: #699D2E;*/
+    background-color: #B4CE96;
+}
+
+.qreg {
+    border: 1px solid #699D2E;
+}
+.qhlt {
+    border: 1px solid #FF9D2E;
+}
+
+.hreg {
+    border: 1px solid #FFFFFF;
+}
+.hhlt {
+    border: 1px solid #FF9D2E;
+}
+
+html > body .dojoSplitContainerSizerH {
+    border: 1px solid #E1E6E6;
+    background-color: #125987;
+    margin-top:4px;
+    margin-bottom:4px;
+}

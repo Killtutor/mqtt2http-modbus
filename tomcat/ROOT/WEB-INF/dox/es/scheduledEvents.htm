@@ -1,0 +1,42 @@
+<!--
+    Vemetris - M2M - http://www.vemetris.com
+    Copyright (C) 2011-2012 Vemetris.
+    @author Andres Ponte
+
+ -->
+<h1>Visión general</h1>
+<p>
+	Eventos programados es usado para producir eventos en momentos específicos de tiempo. Es similar a los detectores de eventos (en que se puede producir eventos),
+	pero estos son basados en valores de tiempo y no de puntos.
+</p>
+
+<h1>Lista de eventos programados</h1>
+<p>
+	Para agregar un nuevo evento programado, hacer clic en el icono <img src="images/clock_add.png"/>. Para editar un evento programado existente, hacer clic
+	en la descripción del evento en la lista de eventos programados.
+</p>
+
+<h1>Edición de eventos programados</h1>
+<p>
+	El <b>Alias</b> es un valor opcional que será utilizado como descripción para el evento dentro del sistema si éste es proporcionado.
+	En caso contrario, se utilizará una descripción generada de forma automática.
+</p>
+<p>El <b>Nivel de alarma</b> determina si el evento programado activa una alarma cuando está activo y su nivel de gravedad. Ver la página de ayuda general para
+	más información sobre el nivel de alarmas.</p>
+
+<p>El <b>Tipo de planficación</b> determina el periodo de tiempo base del evento. Esos tipos incluyen horario, diario, etc. Por ejemplo, un tipo de planificación
+	horario correrá el evento cada hora. Si se requiere que un evento corra dos veces al día, es necesario definir dos eventos programados diarios, uno para cada hora.
+	Sin embargo, también es posible definir un patrón cronológico que corra varias veces dentro del periodo de tiempo. (Ver la documentación "Patrones de cronológicos"
+	para más información)</p>
+
+<p><b>Volver a la normalidad</b> determina si el evento cuando se encuentra activo es automáticamente vuelto a la normalidad cuando se torne inactivo.
+	Si esta opción está seleccionada, es necesario definir el tiempo para que dicho evento se convierta en inactivo.</p>
+<p>Un evento programado puede ser <b>Deshabilitado</b> para que éste no corra. Esto puede ser útil si no se desea borrar el evento, pero tampoco se desea
+	mantenerlo activo.</p>
+
+<h1>Horas de Actividad/Retorno</h1>
+<p>Los campos disponibles para la edición de horas de actividad y retorno dependen del tipo de planificación seleccionado. Estos campos no deberian requerir explicación
+	ya que son basados exclusivamente en el calendario gregoriano. Para más información sobre patrones cronológicos, ver la documentación "Patrones cronológicos".</p>
+
+<p>Para guardar un evento programado, hacer clic en el icono <img src="images/save.png"/> en la parte superior derecha. Para borrar un evento existente, hacer
+	clic en el icono <img src="images/delete.png"/>.</p>

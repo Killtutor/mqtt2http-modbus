@@ -1,0 +1,45 @@
+<!--
+    Mango - Open Source M2M - http://mango.serotoninsoftware.com
+    Copyright (C) 2006-2011 Serotonin Software Technologies Inc.
+    @author Matthew Lohbihler
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/.
+ -->
+<h1>Overview</h1>
+<p>
+  This data source is used to collect data sent from persistent TCP publishers on other Mango instances. (The data
+  source is capable of receiving publisher connections from the same instance, but this is typically of little utility.)
+</p>
+
+<h1>Configuration</h1>
+<p>
+  Every data source requires a <b>Name</b>, which can be any description. The <b>XID</b> is used in the import/export
+  facility, and must be unique among all data sources. By default a value is automatically generated that is unique at
+  the time of generation.
+</p>
+<p>
+  The <b>Port</b> is the TCP port number at which the data source will listen for connection requests from publishers.
+  This can be any number from 1 to 65535, but some care must be taken to choose a number that is not already in use on
+  the host.
+</p>
+<p>
+  The <b>Authorization key</b> is a shared secret key between the publisher and the data source, which provides
+  security on the connection by preventing unauthorized connections to the data source.
+</p>
+<p>
+  The <b>Accept point attribute udpates</b> checkbox determines whether point update requests from the publisher should
+  be accepted and used. For example, if a user on the publisher system changes the name or other properties of a point
+  configured in the publisher, the publisher will notify the data source of the change. If such changes are accepted
+  the change will be implemented on the data source instance as well.
+</p>
