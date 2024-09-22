@@ -3,7 +3,7 @@
 FROM tomcat:8-jre8
 
 # Copia tu carpeta ROOT personalizada al directorio webapps de Tomcat
-
+RUN ls -al
 COPY ./ROOT /usr/local/tomcat/webapps/ROOT
 COPY ./env.vemetris /usr/local/tomcat/webapps/ROOT/WEB-INF/classes/env.properties
 COPY ./healthCheck.sh /healthCheck.sh
