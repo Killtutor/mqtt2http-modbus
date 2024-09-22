@@ -33,6 +33,7 @@ jobs:
 
       # Step 3: Deploy Traefik if it doesn't exist
       - name: Deploy Traefik (if not exists)
+        if: ${{ steps.check_traefik.outputs.TRAEFIK_EXISTS == 'false' }}
         run: |
           docker network create -d bridge traefik-net || true
           docker compose -f docker-compose-traefik.yml up -d
