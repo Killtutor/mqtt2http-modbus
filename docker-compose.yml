@@ -74,6 +74,7 @@ services:
     expose:
       - "1883"
     ports:
+      - "1883:1883"
       # These are the ports for the http server
       - "3001:3001"
       # These are the ports for the modbus slaves include more as needed
