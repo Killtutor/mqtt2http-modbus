@@ -68,8 +68,8 @@ services:
     environment:
       - MQTT_PORT=1883
       - MQTT_HOST=127.0.0.1
-      - MQTT_USER=Remota
-      - MQTT_PASS=${MQTT_PASS}
+      - MQTT_USER=Vemetris
+      - MQTT_PASS=Vemetris
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     ports:
       # This is the port for the mqtt broker
