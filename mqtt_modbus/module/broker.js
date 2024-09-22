@@ -18,9 +18,7 @@ if (
   stats(aedes);
   // The authentication function
   aedes.authenticate = (client, username, password, callback) => {
-    console.log("🚀 ~ username:", username);
     password = Buffer.from(password, "base64").toString();
-    console.log("🚀 ~ password:", password);
     if (
       username === (process.env.MQTT_USER || config.mqttUser) &&
       password === (process.env.MQTT_PASS || config.mqttPass)
