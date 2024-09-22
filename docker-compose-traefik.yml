@@ -28,7 +28,7 @@ services:
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.tls.certresolver=le"
       - "traefik.http.routers.dashboard.middlewares=auth"
-      - "traefik.http.middlewares.auth.basicauth.users=killtutor:1234567890"
+      - "traefik.http.middlewares.auth.basicauth.users=admin:$apr1$JmB4T2Zj$unPEAZSPYQmOUX.8XONLm1"
 
     ports:
       - "80:80"
