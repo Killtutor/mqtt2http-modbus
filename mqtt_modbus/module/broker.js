@@ -9,15 +9,22 @@ const config = require("./config.json");
 // };
 
 // Lets run the MQTT broker if the host is localhost in our config
-if (["localhost", "127.0.0.1"].includes(config.mqttHost)) {
+if (
+  ["localhost", "127.0.0.1"].includes(process.env.MQTT_HOST || config.mqttHost)
+) {
   // The MQTT broker library
   const aedes = require("aedes")();
   const stats = require("aedes-stats");
   stats(aedes);
   // The authentication function
   aedes.authenticate = (client, username, password, callback) => {
+    console.log("🚀 ~ username:", username);
     password = Buffer.from(password, "base64").toString();
-    if (username === config.mqttUser && password === config.mqttPass) {
+    console.log("🚀 ~ password:", password);
+    if (
+      username === (process.env.MQTT_USER || config.mqttUser) &&
+      password === (process.env.MQTT_PASS || config.mqttPass)
+    ) {
       return callback(null, true);
     }
     console.log("Authentication failed.");
