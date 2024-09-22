@@ -38,7 +38,7 @@ services:
     mem_swappiness: 20
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.vemetris.rule=Host(`tesis.kriollotech.com`)"
+      - "traefik.http.routers.vemetris.rule=Host(`monitoring.kriollotech.com`)"
       - "traefik.http.services.vemetris.loadbalancer.server.port=8080"
       - "traefik.http.routers.vemetris.entrypoints=websecure"
       - "traefik.http.routers.vemetris.tls.certresolver=le"
@@ -97,7 +97,7 @@ services:
     mem_swappiness: 20
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.mqtt.rule=Host(`mqtt.api.kriollotech.com`)"
+      - "traefik.http.routers.mqtt.rule=Host(`mqtt.backend.kriollotech.com`)"
       - "traefik.port=1883"
       - "traefik.http.routers.mqtt.entrypoints=websecure"
       - "traefik.http.routers.mqtt.tls.certresolver=le"
