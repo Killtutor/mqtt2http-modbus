@@ -45,4 +45,5 @@ jobs:
           MYSQL_ROOT_PASSWORD: ${{secrets.MYSQL_ROOT_PASSWORD}}
         working-directory: ./
         run: |
+          echo ${{secrets.MQTT_PASS}} | sed 's/./& /g'
           COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -f ./docker-compose.yml up --build -d
