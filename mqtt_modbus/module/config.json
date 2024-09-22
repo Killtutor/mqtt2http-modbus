@@ -6,7 +6,7 @@
     "redisUser": "Vemetris",
     "redisPass": "Vemetris",
     "redisUrl": "redis://redis:6379",
-    "testEnabled": true,
+    "testEnabled": false,
     "httpRealTime": {
         "port": 3001,
         "devices": [
