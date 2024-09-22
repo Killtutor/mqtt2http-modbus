@@ -71,9 +71,9 @@ services:
       - MQTT_USER=Vemetris
       - MQTT_PASS=Vemetris
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+    expose:
+      - "1883"
     ports:
-      # This is the port for the mqtt broker
-      - "1883:1883"
       # These are the ports for the http server
       - "3001:3001"
       # These are the ports for the modbus slaves include more as needed
@@ -99,13 +99,12 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.mqtt.rule=Host(`mqtt.backend.kriollotech.com`)"
-      - "traefik.port=1883"
       - "traefik.http.routers.mqtt.entrypoints=websecure"
       - "traefik.http.routers.mqtt.tls.certresolver=le"
+      - "traefik.tcp.routers.mqtt.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.mqtt.tls.certresolver=le"
       - "traefik.tcp.services.mqtt.loadbalancer.server.port=1883"
       - "traefik.tcp.routers.mqtt.entrypoints=mqtt"
-      - "traefik.tcp.routers.mqtt.rule=HostSNI(`*`)"
-      - "traefik.tcp.routers.mqtt.service=mqtt"
 
     depends_on:
       tomcat:
