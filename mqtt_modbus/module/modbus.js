@@ -43,16 +43,13 @@ let mensajes = 0;
 client.on("message", async function (topic, message) {
   const proTopic = topic.split("/");
   if (proTopic[0] === "$SYS") {
-    if (proTopic[2] === "messages") {
-      return console.log(topic, message.toString("utf8"));
-    }
     return;
   }
   const sede = proTopic[0];
   const RTU = parseInt(proTopic[1]);
   const retype = retTypeTranslator[proTopic[2]] ?? "ir";
   const addr = proTopic[3];
-  const context = message.toString("utf8");
+  const context = message ? message.toString("utf8") : "";
   await redis.set(`${sede}/rtu/${RTU}/${retype}/${addr}`, String(context));
   mensajes += 1;
   if (mensajes % 5000 === 0) {

@@ -10,18 +10,14 @@ const { setTimeout } = require("timers/promises");
 
 async function runTestData(params) {
   if (Boolean(config.testEnabled)) {
-    const client = mqtt.connect(
-      `mqtt://${process.env.MQTT_HOST || config.mqttHost}:${
-        process.env.MQTT_PORT || config.mqttPort
-      }`,
-      {
-        password: process.env.MQTT_PASS || config.mqttPass,
-        username: process.env.MQTT_USER || config.mqttUser
-        // rejectUnauthorized: false,
-        // key: options.key,
-        // cert: options.cert
-      }
-    );
+    const options = {
+      port: 8883,
+      host: "mqtt.backend.kriollotech.com",
+      protocol: "mqtts",
+      username: "Vemetris",
+      password: "Vemetris"
+    };
+    const client = mqtt.connect(options);
     client.on("connect", function () {
       console.info("HTTP TESTING SUITE Conectado al broker");
     });
@@ -36,16 +32,21 @@ async function runTestData(params) {
         await setTimeout(1000);
         await Promise.all(
           device.points.map((d) => {
+            // console.log("🚀 ~ device.points.map ~ d:", d);
             const random = Math.random();
-            return client.publishAsync(
-              `${device.nombre}/${d.name}`,
+            console.log(`${device.nombre}/${d.name}`);
+            const dataToSend =
               d.type === "binary"
                 ? String(random > 0.5)
                 : d.type === "alpha"
                 ? `Ola K Ase? ${random * 123}`
                 : d.type === "multi"
                 ? (random * 123456).toFixed(0)
-                : String(random * 123456)
+                : String(random * 123456);
+            console.log("🚀 ~ device.points.map ~ dataToSend:", dataToSend);
+            return client.publishAsync(
+              `${device.nombre}/${d.name}`,
+              dataToSend
             );
           })
         );
@@ -53,7 +54,9 @@ async function runTestData(params) {
     }
   }
 }
-
+(async () => {
+  await runTestData();
+})();
 if (require.main === module) {
   // ran with `node init.js`
   runTestData();

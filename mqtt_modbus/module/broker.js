@@ -1,13 +1,6 @@
 // Import statements
 const config = require("./config.json");
 
-// Only needed when MQTT over TLS is required in a localhost environment when published trefik handles everything related to ssl
-// const fs = require("fs");
-// const options = {
-//   key: fs.readFileSync("./TLS/brokerKey.pem"),
-//   cert: fs.readFileSync("./TLS/brokerCertificate.pem")
-// };
-
 // Lets run the MQTT broker if the host is localhost in our config
 if (
   ["localhost", "127.0.0.1"].includes(process.env.MQTT_HOST || config.mqttHost)
@@ -18,7 +11,10 @@ if (
   stats(aedes);
   // The authentication function
   aedes.authenticate = (client, username, password, callback) => {
-    password = Buffer.from(password, "base64").toString();
+    password = Buffer.from(
+      password || "Esta no es la Clave",
+      "base64"
+    ).toString();
     if (
       username === (process.env.MQTT_USER || config.mqttUser) &&
       password === (process.env.MQTT_PASS || config.mqttPass)

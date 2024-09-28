@@ -32,7 +32,7 @@ const initialize = async () => {
     const sede = proTopic.shift();
     const parametro = proTopic.shift();
     const toSend = `http://tomcat:8080/httpds?&${parametro}=${encodeURI(
-      message.toString()
+      message ? message.toString() : ""
     )}&__device=${sede}&__time=${dayjs()
       .subtract(4, "hours")
       .format("YYYYMMDDHHMMSS")}`;
