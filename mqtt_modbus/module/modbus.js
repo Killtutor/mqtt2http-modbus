@@ -179,6 +179,6 @@ function initServerTCP(sede, puerto) {
 
   serverTCP.on("socketError", function (err) {
     console.error(err);
-    serverTCP.close(closed);
+    serverTCP.close();
   });
 }
