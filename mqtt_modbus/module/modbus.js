@@ -69,7 +69,13 @@ client.on("message", async function (topic, message) {
   const RTU = parseInt(proTopic[1]);
   const retype = retTypeTranslator[proTopic[2]] ?? "ir";
   const addr = proTopic[3];
-  const context = message ? message.toString("utf8") : "";
+  let context = message ? message.toString("utf8") : "";
+  context = ["0", "false", "falso", "False", "Falso"].includes(context)
+    ? "0"
+    : context;
+  context = ["1", "true", "verdadero", "True", "Verdadero"].includes(context)
+    ? "1"
+    : context;
   if (proTopic[2] === "string") {
     const combinedASCII = stringToCombinedASCII(context);
     let c = 0;
@@ -173,9 +179,7 @@ function initServerTCP(sede, puerto) {
           const holdingData = await redis.get(
             `${sede}/rtu/${unitID}/hr/${addr}`
           );
-          const toSend = holdingData
-            ? Number(Number(holdingData).toFixed(0))
-            : 0;
+          const toSend = holdingData ? Number(holdingData) : 0;
           return resolve(toSend);
         } catch (error) {
           resolve(0);

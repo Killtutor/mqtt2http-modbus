@@ -53,7 +53,6 @@ const initialize = async () => {
         )}&__device=${sede}&__time=${dayjs()
           .subtract(4, "hours")
           .format("YYYYMMDDHHMMSS")}`;
-        console.log("🚀 ~ toSend:", toSend);
         axios.get(toSend);
       }
     } catch (error) {
@@ -62,7 +61,6 @@ const initialize = async () => {
       )}&__device=${sede}&__time=${dayjs()
         .subtract(4, "hours")
         .format("YYYYMMDDHHMMSS")}`;
-      console.log("🚀 ~ toSend:", toSend);
       return axios.get(toSend);
     }
   });
