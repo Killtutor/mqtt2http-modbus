@@ -18,6 +18,25 @@ client.on("connect", function () {
   );
 });
 
+function stringToCombinedASCII(str) {
+  const combinedArray = [];
+  for (let i = 0; i < str.length; i += 2) {
+    let charCode1 = str.charCodeAt(i);
+    let charCode2 = str.charCodeAt(i + 1);
+
+    if (charCode1 > 127 || (i + 1 < str.length && charCode2 > 127)) {
+      throw new Error("Character outside of ASCII range.");
+    }
+
+    if (i + 1 < str.length) {
+      combinedArray.push((charCode1 << 8) | charCode2); // Combine two characters
+    } else {
+      combinedArray.push(charCode1 << 8); // Handle odd length strings
+    }
+  }
+  return combinedArray;
+}
+
 // REDIS import and Client Config
 const { createClient } = require("redis");
 const redis = createClient({
@@ -51,10 +70,19 @@ client.on("message", async function (topic, message) {
   const retype = retTypeTranslator[proTopic[2]] ?? "ir";
   const addr = proTopic[3];
   const context = message ? message.toString("utf8") : "";
-  await redis.set(
-    `${sede}/rtu/${RTU}/${retype}/${addr}`,
-    "STR:_" + String(context)
-  );
+  if (proTopic[2] === "string") {
+    const combinedASCII = stringToCombinedASCII(context);
+    let c = 0;
+    for (const ascii of combinedASCII) {
+      await redis.set(
+        `${sede}/rtu/${RTU}/${retype}/${Number(addr) + c}`,
+        String(ascii)
+      );
+      c += 1;
+    }
+  } else {
+    await redis.set(`${sede}/rtu/${RTU}/${retype}/${addr}`, String(context));
+  }
   mensajes += 1;
   if (mensajes % 5000 === 0) {
     console.log("recibidos por cliente: ", mensajes);
@@ -145,11 +173,9 @@ function initServerTCP(sede, puerto) {
           const holdingData = await redis.get(
             `${sede}/rtu/${unitID}/hr/${addr}`
           );
-          const splitedData = holdingData.split("_");
-          const isSTR = splitedData[0] === "STR:";
-          const toSend = isSTR
-            ? Number(splitedData[1])
-            : Number(Number(holdingData).toFixed(0));
+          const toSend = holdingData
+            ? Number(Number(holdingData).toFixed(0))
+            : 0;
           return resolve(toSend);
         } catch (error) {
           resolve(0);
