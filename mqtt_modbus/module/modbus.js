@@ -36,12 +36,13 @@ function stringToCombinedASCII(str) {
   }
   return combinedArray;
 }
+
 function floatToByteArray(number) {
   const buffer = Buffer.alloc(4);
-  buffer.writeFloatLE(number, 0);
+  buffer.writeFloatBE(number, 0);
   const byteArray = [];
   for (let i = 0; i < 4; i += 2) {
-    byteArray.push(buffer.readUInt16LE(i));
+    byteArray.push(buffer.readUInt16BE(i));
   }
   return byteArray;
 }
