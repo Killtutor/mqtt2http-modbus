@@ -34,7 +34,8 @@ const retTypeTranslator = {
   input: "ir",
   holding: "hr",
   discrete: "dr",
-  coil: "cr"
+  coil: "cr",
+  string: "hr"
 };
 
 //formato esperado de topico: sede/RTU#/retype/addr#
@@ -50,7 +51,10 @@ client.on("message", async function (topic, message) {
   const retype = retTypeTranslator[proTopic[2]] ?? "ir";
   const addr = proTopic[3];
   const context = message ? message.toString("utf8") : "";
-  await redis.set(`${sede}/rtu/${RTU}/${retype}/${addr}`, String(context));
+  await redis.set(
+    `${sede}/rtu/${RTU}/${retype}/${addr}`,
+    "STR:_" + String(context)
+  );
   mensajes += 1;
   if (mensajes % 5000 === 0) {
     console.log("recibidos por cliente: ", mensajes);
@@ -141,9 +145,11 @@ function initServerTCP(sede, puerto) {
           const holdingData = await redis.get(
             `${sede}/rtu/${unitID}/hr/${addr}`
           );
-          const toSend = holdingData
-            ? Number(Number(holdingData).toFixed(0))
-            : 0;
+          const splitedData = holdingData.split("_");
+          const isSTR = splitedData[0] === "STR:";
+          const toSend = isSTR
+            ? splitedData[1]
+            : Number(Number(holdingData).toFixed(0));
           return resolve(toSend);
         } catch (error) {
           resolve(0);
