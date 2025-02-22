@@ -54,7 +54,7 @@ const initialize = async () => {
           .subtract(4, "hours")
           .format("YYYYMMDDHHMMSS")}`;
         console.log("🚀 ~ toSend:", toSend);
-        return axios.get(toSend);
+        axios.get(toSend);
       }
     } catch (error) {
       const toSend = `http://tomcat:8080/httpds?&${parametro}=${encodeURI(
