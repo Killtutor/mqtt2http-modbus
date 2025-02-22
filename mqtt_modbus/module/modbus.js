@@ -148,7 +148,7 @@ function initServerTCP(sede, puerto) {
           const splitedData = holdingData.split("_");
           const isSTR = splitedData[0] === "STR:";
           const toSend = isSTR
-            ? splitedData[1]
+            ? Number(splitedData[1])
             : Number(Number(holdingData).toFixed(0));
           return resolve(toSend);
         } catch (error) {
