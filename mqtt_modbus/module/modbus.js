@@ -36,6 +36,15 @@ function stringToCombinedASCII(str) {
   }
   return combinedArray;
 }
+function floatToByteArray(number) {
+  const buffer = Buffer.alloc(4);
+  buffer.writeFloatLE(number, 0);
+  const byteArray = [];
+  for (let i = 0; i < 4; i += 2) {
+    byteArray.push(buffer.readUInt16LE(i));
+  }
+  return byteArray;
+}
 
 // REDIS import and Client Config
 const { createClient } = require("redis");
@@ -85,6 +94,16 @@ client.on("message", async function (topic, message) {
         String(ascii)
       );
       c += 1;
+    }
+  } else if (retype === "hr") {
+    console.log("hr", context, Number(context));
+    const byteArray = floatToByteArray(Number(context));
+    console.log("🚀 ~ byteArray:", byteArray);
+    for (let i = 0; i < byteArray.length; i++) {
+      await redis.set(
+        `${sede}/rtu/${RTU}/${retype}/${Number(addr) + i}`,
+        String(byteArray[i])
+      );
     }
   } else {
     await redis.set(`${sede}/rtu/${RTU}/${retype}/${addr}`, String(context));
