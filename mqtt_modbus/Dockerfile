@@ -4,6 +4,11 @@ FROM node:20.15
 # Copia el script de configuración SQL al directorio docker-entrypoint-initdb.d
 COPY ./module /mqtt-modbus
 COPY ./tests /tests
+
+WORKDIR /tests
+
+RUN yarn install
+
 WORKDIR /mqtt-modbus
 
 # Actualizar lista de paquetes e instalar paquetes necesarios
