@@ -1,0 +1,18 @@
+{
+    "name": "mqtt-modbus-tests",
+    "version": "1.0.0",
+    "description": "Performance and scalability tests for MQTT-HTTP and MQTT-Modbus modules",
+    "scripts": {
+        "performance": "node performance.js",
+        "scalability": "node scalability.js",
+        "test": "node performance.js && node scalability.js"
+    },
+    "dependencies": {
+        "axios": "^1.6.0",
+        "dayjs": "^1.11.10",
+        "express": "^4.18.2",
+        "modbus-serial": "^8.0.16",
+        "mqtt": "^5.3.0",
+        "pidusage": "^3.0.2"
+    }
+}
