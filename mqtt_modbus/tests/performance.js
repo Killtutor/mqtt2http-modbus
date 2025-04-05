@@ -20,8 +20,8 @@ const config = require("./config.json");
 
 // Test configuration
 const TEST_DURATION = 120000; // 2 minute in ms
-const MESSAGE_INTERVAL = 10; // ms between messages
-const NUM_MESSAGES = Math.floor(TEST_DURATION / MESSAGE_INTERVAL);
+const MESSAGE_INTERVAL = 1; // ms between messages
+const NUM_MESSAGES = Math.floor(TEST_DURATION / MESSAGE_INTERVAL) * 10;
 const SAMPLE_INTERVAL = 1000; // 1 second sampling interval for CPU/mem
 const TEST_MODULES = ["http", "modbus"];
 
@@ -86,9 +86,9 @@ async function testHttpModule(httpPid) {
       client.publish(
         `PDVSA_SEDE1_http/string1`,
         JSON.stringify({
-          temp: 15,
-          presion: 1.5,
-          humedad: 0.5
+          temp: 18,
+          presion: 2.5,
+          humedad: 0.8
         })
       );
     } catch (error) {
@@ -140,7 +140,7 @@ async function testModbusModule(modbusPid) {
     try {
       client.publish(
         `${firstSede.nombre}/1/string/8`,
-        "Probando Alphanumericos, en HTTP y MODBUS                                              "
+        "Probando PERFORMANCE, en HTTP y MODBUS                                              "
       );
     } catch (error) {
       console.error("Error publishing message Modbus:", error);
