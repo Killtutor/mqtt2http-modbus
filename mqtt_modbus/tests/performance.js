@@ -12,12 +12,11 @@
 "use strict";
 
 const mqtt = require("mqtt");
-const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 const { performance } = require("perf_hooks");
 const pidusage = require("pidusage");
-const config = require("../module/config.json");
+const config = require("./config.json");
 
 // Test configuration
 const TEST_DURATION = 60000; // 1 minute in ms
