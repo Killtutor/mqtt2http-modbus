@@ -285,8 +285,6 @@ async function runPerformanceTests(httpPid, modbusPid) {
   // Generate report
   generateReport();
 
-  // Close test server and MQTT client
-  server.close();
   client.end();
 
   console.log("Performance tests completed.");
