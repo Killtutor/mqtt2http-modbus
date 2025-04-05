@@ -44,11 +44,13 @@ const mqttConnection = `mqtt://${process.env.MQTT_HOST || config.mqttHost}:${
   process.env.MQTT_PORT || config.mqttPort
 }`;
 console.log("🚀 ~ mqttConnection:", mqttConnection);
-// Connect to MQTT broker
-const client = mqtt.connect(mqttConnection, {
+const mqttCredentials = {
   password: process.env.MQTT_PASS || config.mqttPass,
   username: process.env.MQTT_USER || config.mqttUser
-});
+};
+console.log("🚀 ~ mqttCredentials:", mqttCredentials);
+// Connect to MQTT broker
+const client = mqtt.connect(mqttConnection, mqttCredentials);
 
 let httpLatencies = [];
 
@@ -80,14 +82,18 @@ async function testHttpModule(httpPid) {
   // Send test messages
   const messageInterval = setInterval(() => {
     const startReadTime = performance.now();
-    client.publish(
-      `PDVSA_SEDE1_http/string1`,
-      JSON.stringify({
-        temp: 15,
-        presion: 1.5,
-        humedad: 0.5
-      })
-    );
+    try {
+      client.publish(
+        `PDVSA_SEDE1_http/string1`,
+        JSON.stringify({
+          temp: 15,
+          presion: 1.5,
+          humedad: 0.5
+        })
+      );
+    } catch (error) {
+      console.error("Error publishing message HTTP:", error);
+    }
     const endReadTime = performance.now();
     httpLatencies.push(endReadTime - startReadTime);
 
@@ -131,10 +137,14 @@ async function testModbusModule(modbusPid) {
 
   const messageInterval = setInterval(() => {
     const startReadTime = performance.now();
-    client.publish(
-      `${firstSede.nombre}/1/string/8`,
-      "Probando Alphanumericos, en HTTP y MODBUS                                              "
-    );
+    try {
+      client.publish(
+        `${firstSede.nombre}/1/string/8`,
+        "Probando Alphanumericos, en HTTP y MODBUS                                              "
+      );
+    } catch (error) {
+      console.error("Error publishing message Modbus:", error);
+    }
     const endReadTime = performance.now();
     modbusLatencies.push(endReadTime - startReadTime);
 
