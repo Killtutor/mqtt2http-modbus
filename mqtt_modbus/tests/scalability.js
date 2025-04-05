@@ -21,9 +21,10 @@ const pidusage = require("pidusage");
 const config = require("./config.json");
 
 // Test configuration
-const TEST_DURATION = 60000; // 1 minute per device count test
-const MESSAGE_INTERVAL = 100; // ms between messages
+const TEST_DURATION = 120000; // 2 minutes per device count test
+const MESSAGE_INTERVAL = 10; // ms between messages
 const DEVICE_COUNTS = [5, 20, 100, 1000]; // Number of simulated devices
+const MESSAGE_CORRECTION = { 5: 1, 20: 2, 100: 10, 1000: 100 }; // Correction factor for messages
 const SAMPLE_INTERVAL = 1000; // 1 second sampling interval for CPU/mem
 const TEST_MODULES = ["http", "modbus"];
 
@@ -95,11 +96,12 @@ async function testHttpModuleWithDevices(httpPid, deviceCount) {
   let messageCount = 0;
 
   // Send messages from each device
-  const devicePromises = clients.map((client, deviceIndex) => {
+  const devicePromises = clients.map((client) => {
     return new Promise((resolve) => {
       let deviceMessageCount = 0;
       const maxMessagesPerDevice = Math.floor(
-        TEST_DURATION / MESSAGE_INTERVAL / deviceCount
+        (TEST_DURATION / MESSAGE_INTERVAL / deviceCount) *
+          MESSAGE_CORRECTION[deviceCount]
       );
 
       const interval = setInterval(() => {
@@ -109,7 +111,7 @@ async function testHttpModuleWithDevices(httpPid, deviceCount) {
           JSON.stringify({
             humedad: Math.random(),
             presion: Math.random() * 1000,
-            temperatura: Math.random() * 100
+            temp: Math.random() * 100
           })
         );
         const timeEnd = performance.now();
@@ -199,7 +201,8 @@ async function testModbusModuleWithDevices(modbusPid, deviceCount) {
     return new Promise((resolve) => {
       let deviceMessageCount = 0;
       const maxMessagesPerDevice = Math.floor(
-        TEST_DURATION / MESSAGE_INTERVAL / deviceCount
+        (TEST_DURATION / MESSAGE_INTERVAL / deviceCount) *
+          MESSAGE_CORRECTION[deviceCount]
       );
 
       const interval = setInterval(async () => {
@@ -330,8 +333,6 @@ async function runScalabilityTests(httpPid, modbusPid) {
   // Generate the final report
   generateScalabilityReport();
 
-  // Clean up
-  server.close();
   console.log("Scalability tests completed.");
 }
 
