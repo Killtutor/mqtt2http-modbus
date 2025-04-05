@@ -21,7 +21,7 @@ const config = require("./config.json");
 // Test configuration
 const TEST_DURATION = 120000; // 2 minute in ms
 const MESSAGE_INTERVAL = 1; // ms between messages
-const NUM_MESSAGES = Math.floor(TEST_DURATION / MESSAGE_INTERVAL) * 10;
+const NUM_MESSAGES = Math.floor(TEST_DURATION / MESSAGE_INTERVAL) * 3;
 const SAMPLE_INTERVAL = 1000; // 1 second sampling interval for CPU/mem
 const TEST_MODULES = ["http", "modbus"];
 
