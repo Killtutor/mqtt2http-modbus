@@ -50,21 +50,7 @@ function createMqttClient() {
   );
 }
 
-// Mock HTTP server to capture requests from the HTTP module
-const express = require("express");
-const app = express();
-const PORT = 8081;
 let httpLatencies = [];
-
-app.get("/httpds", (req, res) => {
-  const messageId = req.query.messageId;
-  if (messageId) {
-    const endTime = performance.now();
-    const startTime = parseInt(messageId.split("_")[1], 10);
-    httpLatencies.push(endTime - startTime);
-  }
-  res.status(200).send("OK");
-});
 
 // Performance monitoring function
 async function monitorPerformance(pid, moduleType) {
@@ -117,14 +103,17 @@ async function testHttpModuleWithDevices(httpPid, deviceCount) {
       );
 
       const interval = setInterval(() => {
-        const timestamp = performance.now();
+        const timeStart = performance.now();
         client.publish(
-          `device${deviceIndex}/parameter`,
+          `PDVSA_SEDE1_http/string1`,
           JSON.stringify({
-            value: Math.random() * 100,
-            messageId: `http_${timestamp}`
+            humedad: Math.random(),
+            presion: Math.random() * 1000,
+            temperatura: Math.random() * 100
           })
         );
+        const timeEnd = performance.now();
+        httpLatencies.push(timeEnd - timeStart);
 
         deviceMessageCount++;
         messageCount++;
@@ -187,20 +176,8 @@ async function testModbusModuleWithDevices(modbusPid, deviceCount) {
     .fill(0)
     .map(() => createMqttClient());
 
-  // Set up a Modbus client to test receiving data
-  const ModbusRTU = require("modbus-serial");
-  const modbusClient = new ModbusRTU();
-
   // Find the first sede in config
   const firstSede = config.modbusSedes[0];
-
-  // Connect to the Modbus server
-  try {
-    await modbusClient.connectTCP("localhost", firstSede.port);
-    modbusClient.setID(1);
-  } catch (err) {
-    console.error("Error connecting to Modbus server:", err);
-  }
 
   // Collect CPU and memory samples
   const cpuSamples = [];
@@ -227,21 +204,17 @@ async function testModbusModuleWithDevices(modbusPid, deviceCount) {
 
       const interval = setInterval(async () => {
         // Publish a message to Modbus topic for this device
-        const timestamp = performance.now();
-        client.publish(
-          `${firstSede.nombre}/${deviceIndex}/holding/100`,
-          String(Math.random() * 100)
-        );
-
-        // Read via Modbus to measure latency
+        const startReadTime = performance.now();
         try {
-          const startReadTime = performance.now();
-          await modbusClient.readHoldingRegisters(100, 1);
-          const endReadTime = performance.now();
-          latencies.push(endReadTime - startReadTime);
-        } catch (err) {
-          console.error("Error reading from Modbus:", err);
+          client.publish(
+            `${firstSede.nombre}/1/string/8`,
+            `Probando PERFORMANCE ${deviceIndex}, en HTTP y MODBUS                                              `
+          );
+        } catch (error) {
+          console.error("Error publishing message Modbus:", error);
         }
+        const endReadTime = performance.now();
+        latencies.push(endReadTime - startReadTime);
 
         deviceMessageCount++;
         messageCount++;
@@ -288,7 +261,6 @@ async function testModbusModuleWithDevices(modbusPid, deviceCount) {
 
   // Clean up
   clearInterval(monitoringInterval);
-  modbusClient.close();
   console.log(
     `Modbus module scalability test with ${deviceCount} devices completed.`
   );
