@@ -8,11 +8,12 @@ const procesos = {
   config: fork("./configTranslator.js", { silent: false })
 };
 procesos.performance = fork(
-  `../tests/performance.js ${procesos.httpServer.pid} ${procesos.modbusSlave.pid}`,
+  "../tests/performance.js",
+  [procesos.httpServer.pid, procesos.modbusSlave.pid],
   { silent: false }
 );
 // procesos.scalability = fork(
-//   `../tests/scalability.js ${procesos.httpServer.pid} ${procesos.modbusSlave.pid}`,
+//   '../tests/scalability.js', [procesos.httpServer.pid, procesos.modbusSlave.pid],
 //   { silent: false }
 // );
 
