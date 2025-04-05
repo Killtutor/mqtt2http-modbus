@@ -19,8 +19,8 @@ const pidusage = require("pidusage");
 const config = require("./config.json");
 
 // Test configuration
-const TEST_DURATION = 60000; // 1 minute in ms
-const MESSAGE_INTERVAL = 100; // ms between messages
+const TEST_DURATION = 120000; // 2 minute in ms
+const MESSAGE_INTERVAL = 10; // ms between messages
 const NUM_MESSAGES = Math.floor(TEST_DURATION / MESSAGE_INTERVAL);
 const SAMPLE_INTERVAL = 1000; // 1 second sampling interval for CPU/mem
 const TEST_MODULES = ["http", "modbus"];
