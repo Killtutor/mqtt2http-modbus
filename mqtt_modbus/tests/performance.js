@@ -40,33 +40,17 @@ const results = {
     memoryUsage: []
   }
 };
-
+const mqttConnection = `mqtt://${process.env.MQTT_HOST || config.mqttHost}:${
+  process.env.MQTT_PORT || config.mqttPort
+}`;
+console.log("🚀 ~ mqttConnection:", mqttConnection);
 // Connect to MQTT broker
-const client = mqtt.connect(
-  `mqtt://${process.env.MQTT_HOST || config.mqttHost}:${
-    process.env.MQTT_PORT || config.mqttPort
-  }`,
-  {
-    password: process.env.MQTT_PASS || config.mqttPass,
-    username: process.env.MQTT_USER || config.mqttUser
-  }
-);
-
-// Mock HTTP server to capture requests from the HTTP module
-const express = require("express");
-const app = express();
-const PORT = 8081;
-let httpLatencies = [];
-
-app.get("/httpds", (req, res) => {
-  const messageId = req.query.messageId;
-  if (messageId) {
-    const endTime = performance.now();
-    const startTime = parseInt(messageId.split("_")[1], 10);
-    httpLatencies.push(endTime - startTime);
-  }
-  res.status(200).send("OK");
+const client = mqtt.connect(mqttConnection, {
+  password: process.env.MQTT_PASS || config.mqttPass,
+  username: process.env.MQTT_USER || config.mqttUser
 });
+
+let httpLatencies = [];
 
 // Performance monitoring function
 async function monitorPerformance(pid, moduleType) {
@@ -95,14 +79,17 @@ async function testHttpModule(httpPid) {
 
   // Send test messages
   const messageInterval = setInterval(() => {
-    const timestamp = performance.now();
+    const startReadTime = performance.now();
     client.publish(
-      "testSite/parameter",
+      `PDVSA_SEDE1_http/string1`,
       JSON.stringify({
-        value: Math.random() * 100,
-        messageId: `http_${timestamp}`
+        temp: 15,
+        presion: 1.5,
+        humedad: 0.5
       })
     );
+    const endReadTime = performance.now();
+    httpLatencies.push(endReadTime - startReadTime);
 
     messageCount++;
 
@@ -139,46 +126,22 @@ async function testModbusModule(modbusPid) {
   let startTime = performance.now();
   const modbusLatencies = [];
 
-  // Set up a Modbus client to test receiving data
-  const ModbusRTU = require("modbus-serial");
-  const client = new ModbusRTU();
-
   // Find the first sede in config
   const firstSede = config.modbusSedes[0];
 
-  // Connect to the Modbus server
-  try {
-    await client.connectTCP("localhost", firstSede.port);
-    client.setID(1);
-  } catch (err) {
-    console.error("Error connecting to Modbus server:", err);
-  }
-
-  // Send test messages
-  const messageInterval = setInterval(async () => {
-    const timestamp = performance.now();
-
-    // Publish a message to Modbus topic
-    mqtt.publish(
-      `${firstSede.nombre}/1/holding/100`,
-      String(Math.random() * 100)
+  const messageInterval = setInterval(() => {
+    const startReadTime = performance.now();
+    client.publish(
+      `${firstSede.nombre}/1/string/8`,
+      "Probando Alphanumericos, en HTTP y MODBUS                                              "
     );
-
-    // Attempt to read the value via Modbus
-    try {
-      const startReadTime = performance.now();
-      await client.readHoldingRegisters(100, 1);
-      const endReadTime = performance.now();
-      modbusLatencies.push(endReadTime - startReadTime);
-    } catch (err) {
-      console.error("Error reading from Modbus:", err);
-    }
+    const endReadTime = performance.now();
+    modbusLatencies.push(endReadTime - startReadTime);
 
     messageCount++;
 
     if (messageCount >= NUM_MESSAGES) {
       clearInterval(messageInterval);
-
       // Calculate throughput samples
       const endTime = performance.now();
       results.modbus.throughput.push(
