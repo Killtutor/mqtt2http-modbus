@@ -24,7 +24,7 @@ const config = require("./config.json");
 const TEST_DURATION = 120000; // 2 minutes per device count test
 const MESSAGE_INTERVAL = 30; // ms between messages
 const DEVICE_COUNTS = [5, 20, 100, 1000]; // Number of simulated devices
-const MESSAGE_CORRECTION = { 5: 1, 20: 2, 100: 10, 1000: 100 }; // Correction factor for messages
+const MESSAGE_CORRECTION = { 5: 1, 20: 2, 100: 10, 500: 10 }; // Correction factor for messages
 const SAMPLE_INTERVAL = 1000; // 1 second sampling interval for CPU/mem
 const TEST_MODULES = ["http", "modbus"];
 
@@ -105,20 +105,25 @@ async function testHttpModuleWithDevices(httpPid, deviceCount) {
       );
 
       const interval = setInterval(() => {
-        const timeStart = performance.now();
-        client.publish(
-          `PDVSA_SEDE1_http/string1`,
-          JSON.stringify({
-            humedad: Math.random(),
-            presion: Math.random() * 1000,
-            temp: Math.random() * 100
-          })
-        );
-        const timeEnd = performance.now();
-        httpLatencies.push(timeEnd - timeStart);
+        try {
+          const timeStart = performance.now();
 
-        deviceMessageCount++;
-        messageCount++;
+          client.publish(
+            `PDVSA_SEDE1_http/string1`,
+            JSON.stringify({
+              humedad: Math.random(),
+              presion: Math.random() * 1000,
+              temp: Math.random() * 100
+            })
+          );
+          const timeEnd = performance.now();
+          httpLatencies.push(timeEnd - timeStart);
+
+          deviceMessageCount++;
+          messageCount++;
+        } catch (error) {
+          console.log("🚀 ~ interval ~ error:", error);
+        }
 
         if (deviceMessageCount >= maxMessagesPerDevice) {
           clearInterval(interval);
