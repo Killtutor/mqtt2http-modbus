@@ -23,7 +23,7 @@ const config = require("./config.json");
 // Test configuration
 const TEST_DURATION = 120000; // 2 minutes per device count test
 const MESSAGE_INTERVAL = 30; // ms between messages
-const DEVICE_COUNTS = [5, 20, 100, 1000]; // Number of simulated devices
+const DEVICE_COUNTS = [5, 20, 100, 500]; // Number of simulated devices
 const MESSAGE_CORRECTION = { 5: 1, 20: 2, 100: 10, 500: 10 }; // Correction factor for messages
 const SAMPLE_INTERVAL = 1000; // 1 second sampling interval for CPU/mem
 const TEST_MODULES = ["http", "modbus"];
