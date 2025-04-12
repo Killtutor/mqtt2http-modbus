@@ -66,8 +66,15 @@ async function publishTypedMessages(client, topic, numMessages, msgType) {
   for (let i = 0; i < numMessages; i++) {
     const messagePayload = generatePayload(msgType);
     const pubStartTime = performance.now();
+    // Log every 10 messages
+    if (i > 0 && i % 10 === 0) {
+      console.log(
+        `Published ${i} ${msgType} messages to ${topic} client.id: ${client.options.clientId}`
+      );
+    }
     try {
       await client.publish(topic, messagePayload);
+
       const pubEndTime = performance.now();
       localLatencies.push(pubEndTime - pubStartTime);
     } catch (error) {
@@ -156,7 +163,9 @@ async function runTestForMessageType(
       let client;
       try {
         client = await createMqttClient();
+        console.log(`Device ${client.options.clientId} connected`);
         await publishTypedMessages(client, topic, msgs_per_type, msgType);
+        console.log(`Device ${client.options.clientId} finished`);
       } catch (err) {
         console.error(
           `Device ${client.options.clientId}: Failed during test - ${err.message}`
@@ -246,13 +255,13 @@ if (require.main === module) {
     console.error("Usage: node scalability.js <httpPid> <modbusPid>");
     process.exit(1);
   }
-  runAllTypeTests(10, 100, httpPid, true)
+  runAllTypeTests(10, 10, httpPid, true)
     .catch((err) => {
       console.error("Error running scalability tests:", err);
       process.exit(1);
     })
     .then(() => {
-      runAllTypeTests(10, 100, modbusPid, false).catch((err) => {
+      runAllTypeTests(10, 10, modbusPid, false).catch((err) => {
         console.error("Error running scalability tests:", err);
         process.exit(1);
       });
@@ -260,7 +269,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-  runScalabilityTests
+  runAllTypeTests
 };
 
 // Optional: Handle Ctrl+C
