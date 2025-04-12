@@ -221,7 +221,12 @@ async function runAllTypeTests(
   console.log(`Simulating ${devices} devices.`);
   console.log(`Messages per type per device: ${msgs_per_type}`);
   console.log(`Target PID: ${targetPid} ${http ? "HTTP" : "MODBUS"}`);
-  console.log("-" * 75);
+  console.log(`Waiting 5 seconds before starting tests...`);
+
+  // Add 5 second timeout before starting tests
+  await new Promise((resolve) => setTimeout(resolve, 5000));
+
+  console.log("-".repeat(75));
   console.log(
     "| Tipo Mensaje | Latencia avg(ms) | Mensajes/s avg | CPU avg (%) | Memoria avg (MB) |"
   );
@@ -233,9 +238,8 @@ async function runAllTypeTests(
     await runTestForMessageType(type, devices, msgs_per_type, targetPid, http);
   }
 
-  console.log("-" * 75);
+  console.log("-".repeat(75));
   console.log("All tests complete.");
-  process.exit(0);
 }
 
 // --- Execute ---
@@ -249,17 +253,18 @@ if (require.main === module) {
     console.error("Usage: node scalability.js <httpPid> <modbusPid>");
     process.exit(1);
   }
-  runAllTypeTests(10, 10, httpPid, true)
-    .catch((err) => {
-      console.error("Error running scalability tests:", err);
+
+  // Run HTTP tests first, then Modbus tests
+  (async () => {
+    try {
+      await runAllTypeTests(10, 10, httpPid, true);
+      await runAllTypeTests(10, 10, modbusPid, false);
+      process.exit(0);
+    } catch (err) {
+      console.error("Error running tests:", err);
       process.exit(1);
-    })
-    .then(() => {
-      runAllTypeTests(10, 10, modbusPid, false).catch((err) => {
-        console.error("Error running scalability tests:", err);
-        process.exit(1);
-      });
-    });
+    }
+  })();
 }
 
 module.exports = {

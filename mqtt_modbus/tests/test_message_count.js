@@ -280,20 +280,15 @@ async function runAllTests() {
   console.log(`Broker: ${argv.broker}:${argv.port}`);
   console.log(`Simulating ${argv.devices} devices.`);
   console.log(`Target PID: ${targetPid}`);
-  console.log("-" * 70);
+  console.log(`Waiting 5 seconds before starting tests...`);
+
+  // Add 5 second timeout before starting tests
+  await new Promise((resolve) => setTimeout(resolve, 5000));
+
+  console.log("-".repeat(70));
   console.log(
-    "| {:<10} | {:<15} | {:<15} | {:<12} | {:<15} |"
-      .replace(/{:<(\d+)}/g, (match, width) => "".padEnd(parseInt(width)))
-      .replace(/\|/g, "|")
-      .replace(/\[:\^(\d+)\]/g, (match, width) => "".padEnd(parseInt(width)))
-      .format(
-        "Messages",
-        "Latency avg(ms)",
-        "Messages/s avg",
-        "CPU avg (%)",
-        "Memory avg (MB)"
-      )
-  ); // Basic table header formatting
+    "| Messages     | Latency avg(ms) | Messages/s avg | CPU avg (%) | Memory avg (MB) |"
+  );
   console.log(
     "|------------|-----------------|-----------------|--------------|-----------------|"
   );
@@ -302,7 +297,7 @@ async function runAllTests() {
     await runTestForMessageCount(count);
   }
 
-  console.log("-" * 70);
+  console.log("-".repeat(70));
   console.log("All tests complete.");
   // Ensure the main process exits cleanly if needed, especially if intervals aren't cleared properly
   process.exit(0);
@@ -321,11 +316,3 @@ process.on("SIGINT", () => {
   // Add any other cleanup needed for clients etc.
   process.exit(0);
 });
-
-// Helper for basic string formatting (like Python's .format)
-String.prototype.format = function (...args) {
-  let i = 0;
-  return this.replace(/{.*?}/g, (match) =>
-    typeof args[i] !== "undefined" ? args[i++] : match
-  );
-};
