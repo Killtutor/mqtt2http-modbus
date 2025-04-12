@@ -95,11 +95,10 @@ async function monitorPerformance(targetPid) {
     memoryUsage.push(stats.memory / 1024 / 1024); // MB
   } catch (error) {
     if (error.message.includes("No matching pid found")) {
-      console.warn(`Monitor: PID ${targetPid} not found. Stopping.`);
       if (monitoringIntervalId) clearInterval(monitoringIntervalId);
       monitoringIntervalId = null;
     } else {
-      console.error(`Monitor: Error PID ${targetPid}:`, error);
+      console.error(`Error monitoring PID ${targetPid}:`, error);
     }
   }
 }
@@ -108,19 +107,22 @@ function startMonitoring(targetPid) {
   if (monitoringIntervalId) clearInterval(monitoringIntervalId);
   cpuUsage = [];
   memoryUsage = [];
+  // Run once immediately to start collecting data
+  monitorPerformance(targetPid);
   monitoringIntervalId = setInterval(
     () => monitorPerformance(targetPid),
     MONITOR_INTERVAL
   );
-  console.log(`Started monitoring PID ${targetPid}...`);
 }
 
 function stopMonitoring() {
   if (monitoringIntervalId) {
     clearInterval(monitoringIntervalId);
     monitoringIntervalId = null;
-    console.log("Stopped monitoring.");
+    // Run one final time to capture end state
+    return monitorPerformance(targetPid);
   }
+  return Promise.resolve();
 }
 
 function calculateStats(array) {
@@ -162,7 +164,7 @@ async function runTestForMessageType(
         await publishTypedMessages(client, topic, msgs_per_type, msgType);
       } catch (err) {
         console.error(
-          `Device ${client.options.clientId}: Failed during test - ${err.message}`
+          `Device ${client?.options?.clientId}: Failed during test - ${err.message}`
         );
       } finally {
         if (client && client.connected) {
@@ -177,7 +179,7 @@ async function runTestForMessageType(
   await Promise.allSettled(devicePromises);
 
   const testEndTime = performance.now();
-  stopMonitoring();
+  await stopMonitoring();
 
   // --- Calculate Metrics for this type ---
   const totalDurationSec = (testEndTime - testStartTime) / 1000;
@@ -218,7 +220,7 @@ async function runAllTypeTests(
   console.log(`Waiting 5 seconds before starting tests...`);
 
   // Add 5 second timeout before starting tests
-  await new Promise((resolve) => setTimeout(resolve, 5000));
+  await new Promise((resolve) => setTimeout(resolve, 15000));
 
   console.log("-".repeat(85));
   console.log(
@@ -251,8 +253,8 @@ if (require.main === module) {
   // Run HTTP tests first, then Modbus tests
   (async () => {
     try {
-      await runAllTypeTests(10, 10, httpPid, true);
-      await runAllTypeTests(10, 10, modbusPid, false);
+      await runAllTypeTests(10, 300, httpPid, true);
+      await runAllTypeTests(10, 300, modbusPid, false);
       process.exit(0);
     } catch (err) {
       console.error("Error running tests:", err);

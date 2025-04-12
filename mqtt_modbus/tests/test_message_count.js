@@ -148,7 +148,6 @@ async function publishMessages(client, deviceId, topic, numMessages) {
 
 async function monitorPerformance() {
   if (!targetPid) {
-    console.warn("No target PID specified for monitoring.");
     return;
   }
   try {
@@ -158,11 +157,10 @@ async function monitorPerformance() {
   } catch (error) {
     // Handle cases where PID doesn't exist anymore
     if (error.message.includes("No matching pid found")) {
-      console.warn(`Monitor: PID ${targetPid} not found. Stopping monitoring.`);
       if (monitoringIntervalId) clearInterval(monitoringIntervalId);
       monitoringIntervalId = null;
     } else {
-      console.error(`Monitor: Error monitoring PID ${targetPid}:`, error);
+      console.error(`Error monitoring PID ${targetPid}:`, error);
     }
   }
 }
@@ -171,18 +169,19 @@ function startMonitoring() {
   if (monitoringIntervalId) clearInterval(monitoringIntervalId); // Clear previous interval if any
   cpuUsage = [];
   memoryUsage = [];
+  // Run once immediately to start collecting data
+  monitorPerformance();
   monitoringIntervalId = setInterval(monitorPerformance, MONITOR_INTERVAL);
-  console.log(`Started monitoring PID ${targetPid}...`);
 }
 
 function stopMonitoring() {
   if (monitoringIntervalId) {
     clearInterval(monitoringIntervalId);
     monitoringIntervalId = null;
-    console.log("Stopped monitoring.");
-    // Run one last time to capture final state? Maybe not necessary.
-    // await monitorPerformance();
+    // Run one final time to capture final state
+    return monitorPerformance();
   }
+  return Promise.resolve();
 }
 
 function calculateStats(array) {
@@ -238,7 +237,7 @@ async function runTestForMessageCount(numMessages) {
   await Promise.allSettled(devicePromises); // Wait for all devices to finish or fail
 
   const testEndTime = performance.now();
-  stopMonitoring(); // Stop before calculations
+  await stopMonitoring(); // Stop before calculations
 
   // --- Calculate Metrics ---
   const totalDurationSec = (testEndTime - testStartTime) / 1000;
