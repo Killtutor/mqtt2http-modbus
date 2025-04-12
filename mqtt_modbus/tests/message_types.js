@@ -246,14 +246,17 @@ if (require.main === module) {
     console.error("Usage: node scalability.js <httpPid> <modbusPid>");
     process.exit(1);
   }
-  await runAllTypeTests(10, 100, httpPid, true).catch((err) => {
-    console.error("Error running scalability tests:", err);
-    process.exit(1);
-  });
-  await runAllTypeTests(10, 100, modbusPid, false).catch((err) => {
-    console.error("Error running scalability tests:", err);
-    process.exit(1);
-  });
+  runAllTypeTests(10, 100, httpPid, true)
+    .catch((err) => {
+      console.error("Error running scalability tests:", err);
+      process.exit(1);
+    })
+    .then(() => {
+      runAllTypeTests(10, 100, modbusPid, false).catch((err) => {
+        console.error("Error running scalability tests:", err);
+        process.exit(1);
+      });
+    });
 }
 
 module.exports = {
