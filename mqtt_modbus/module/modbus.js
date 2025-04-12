@@ -108,9 +108,6 @@ client.on("message", async function (topic, message) {
     await redis.set(`${sede}/rtu/${RTU}/${retype}/${addr}`, String(context));
   }
   mensajes += 1;
-  if (mensajes % 5000 === 0) {
-    console.log("recibidos por cliente: ", mensajes);
-  }
 });
 // Init Function, Runs once on server livespan
 const initialize = async () => {

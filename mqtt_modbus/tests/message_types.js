@@ -66,12 +66,6 @@ async function publishTypedMessages(client, topic, numMessages, msgType) {
   for (let i = 0; i < numMessages; i++) {
     const messagePayload = generatePayload(msgType);
     const pubStartTime = performance.now();
-    // Log every 10 messages
-    if (i > 0 && i % 10 === 0) {
-      console.log(
-        `Published ${i} ${msgType} messages to ${topic} client.id: ${client.options.clientId}`
-      );
-    }
     try {
       await client.publish(topic, messagePayload);
 
@@ -196,7 +190,7 @@ async function runTestForMessageType(
       ? memoryUsage.reduce((a, b) => a + b, 0) / memoryUsage.length
       : 0;
 
-  console.log(
+  console.info(
     `| ${String(msgType).padEnd(12)} | ${latencyStats.avg
       .toFixed(2)
       .padEnd(15)} | ${avgMsgPerSec.toFixed(2).padEnd(15)} | ${avgCpu
@@ -213,20 +207,20 @@ async function runAllTypeTests(
   targetPid = null,
   http = true
 ) {
-  console.log("--- MQTT Scalability Test (Message Type) ---");
-  console.log(`Simulating ${devices} devices.`);
-  console.log(`Messages per type per device: ${msgs_per_type}`);
-  console.log(`Target PID: ${targetPid} ${http ? "HTTP" : "MODBUS"}`);
-  console.log(`Waiting 5 seconds before starting tests...`);
+  console.info("--- MQTT Scalability Test (Message Type) ---");
+  console.info(`Simulating ${devices} devices.`);
+  console.info(`Messages per type per device: ${msgs_per_type}`);
+  console.info(`Target PID: ${targetPid} ${http ? "HTTP" : "MODBUS"}`);
+  console.info(`Waiting 5 seconds before starting tests...`);
 
   // Add 5 second timeout before starting tests
   await new Promise((resolve) => setTimeout(resolve, 15000));
 
-  console.log("-".repeat(85));
-  console.log(
+  console.info("-".repeat(85));
+  console.info(
     "| Tipo Mensaje | Latencia avg(ms) | Mensajes/s avg | CPU avg (%) | Memoria avg (MB) |"
   );
-  console.log(
+  console.info(
     "|--------------|-----------------|-----------------|--------------|-----------------|"
   );
 
@@ -234,8 +228,8 @@ async function runAllTypeTests(
     await runTestForMessageType(type, devices, msgs_per_type, targetPid, http);
   }
 
-  console.log("-".repeat(75));
-  console.log("All tests complete.");
+  console.info("-".repeat(75));
+  console.info("All tests complete.");
 }
 
 // --- Execute ---
