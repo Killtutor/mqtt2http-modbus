@@ -109,7 +109,7 @@ function startMonitoring(targetPid) {
   );
 }
 
-function stopMonitoring() {
+function stopMonitoring(targetPid) {
   if (monitoringIntervalId) {
     clearInterval(monitoringIntervalId);
     monitoringIntervalId = null;
@@ -173,7 +173,7 @@ async function runTestForMessageType(
   await Promise.allSettled(devicePromises);
 
   const testEndTime = performance.now();
-  await stopMonitoring();
+  await stopMonitoring(targetPid);
 
   // --- Calculate Metrics for this type ---
   const totalDurationSec = (testEndTime - testStartTime) / 1000;
