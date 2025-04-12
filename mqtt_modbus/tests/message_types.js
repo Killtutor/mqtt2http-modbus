@@ -45,7 +45,7 @@ function generatePayload(msgType) {
       // Ensure it's a valid number string
       return Buffer.from(String(Math.random() * 2000 - 1000));
     case "string":
-      return crypto.randomBytes(STRING_PAYLOAD_LENGTH);
+      return `Probando PERFORMANCE MMLO, en HTTP y MODBUS`;
     case "json":
       return Buffer.from(
         JSON.stringify({
@@ -145,11 +145,7 @@ async function runTestForMessageType(
   targetPid,
   http
 ) {
-  console.log(
-    `\n--- Running test: ${devices} devices, ${msgs_per_type} messages each, type: ${msgType} ---`
-  );
   publishLatencies[msgType] = []; // Reset latencies for this type
-
   startMonitoring(targetPid);
   const testStartTime = performance.now();
   const devicePromises = [];
@@ -163,9 +159,7 @@ async function runTestForMessageType(
       let client;
       try {
         client = await createMqttClient();
-        console.log(`Device ${client.options.clientId} connected`);
         await publishTypedMessages(client, topic, msgs_per_type, msgType);
-        console.log(`Device ${client.options.clientId} finished`);
       } catch (err) {
         console.error(
           `Device ${client.options.clientId}: Failed during test - ${err.message}`
@@ -226,7 +220,7 @@ async function runAllTypeTests(
   // Add 5 second timeout before starting tests
   await new Promise((resolve) => setTimeout(resolve, 5000));
 
-  console.log("-".repeat(75));
+  console.log("-".repeat(85));
   console.log(
     "| Tipo Mensaje | Latencia avg(ms) | Mensajes/s avg | CPU avg (%) | Memoria avg (MB) |"
   );

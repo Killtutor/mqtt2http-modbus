@@ -97,9 +97,7 @@ client.on("message", async function (topic, message) {
       c += 1;
     }
   } else if (retype === "hr") {
-    console.log("hr", context, Number(context));
     const byteArray = floatToByteArray(Number(context));
-    console.log("🚀 ~ byteArray:", byteArray);
     for (let i = 0; i < byteArray.length; i++) {
       await redis.set(
         `${sede}/rtu/${RTU}/${retype}/${Number(addr) + i}`,
