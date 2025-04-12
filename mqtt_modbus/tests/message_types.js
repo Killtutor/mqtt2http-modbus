@@ -4,19 +4,15 @@ const mqtt = require("mqtt");
 const { performance } = require("perf_hooks");
 const pidusage = require("pidusage");
 const config = require("./config.json");
-const yargs = require("yargs/yargs");
-const { hideBin } = require("yargs/helpers");
-const os = require("os");
 const crypto = require("crypto"); // For generating random strings
 
+// Find the first sede in config
+const firstSede = config.modbusSedes[0];
 // --- Configuration ---
-const DEFAULT_DEVICES = 5;
-const DEFAULT_MESSAGES_PER_TYPE = 100; // Number of messages each device sends *per type*
-const MESSAGE_TYPES = ["boolean", "numero", "cadena", "json"];
-const TEST_TOPIC_TEMPLATE = "test/device/{device_id}/typed_data"; // Topic template
-const CLIENT_ID_TEMPLATE =
-  "scalability-tester-mt-{type}-{device_id}-{timestamp}"; // Unique client ID
-const DEFAULT_QOS = 1;
+const MESSAGE_TYPES_HTTP = ["boolean", "numero", "string", "json"];
+const MESSAGE_TYPES_MODBUS = ["input", "holding", "string"];
+const HTTP_TOPIC_TEMPLATE = "PDVSA_SEDE1_http/{msg_type}"; // Topic template
+const MODBUS_TOPIC_TEMPLATE = `${firstSede.nombre}/1/{msg_type}/0`; // Topic template
 const STRING_PAYLOAD_LENGTH = 100; // Length for 'cadena' type
 const MONITOR_INTERVAL = 1000; // ms for CPU/Mem sampling
 
@@ -25,99 +21,30 @@ let publishLatencies = {}; // { type: [latencies] }
 let cpuUsage = [];
 let memoryUsage = [];
 let monitoringIntervalId = null;
-let targetPid = null; // PID of the process being monitored
 
-// --- Argument Parsing ---
-const argv = yargs(hideBin(process.argv))
-  .option("broker", {
-    alias: "b",
-    type: "string",
-    description: "MQTT broker address",
-    default: process.env.MQTT_HOST || config.mqttHost || "localhost"
-  })
-  .option("port", {
-    alias: "p",
-    type: "number",
-    description: "MQTT broker port",
-    default: process.env.MQTT_PORT || config.mqttPort || 1883
-  })
-  .option("user", {
-    alias: "u",
-    type: "string",
-    description: "MQTT user",
-    default: process.env.MQTT_USER || config.mqttUser
-  })
-  .option("password", {
-    alias: "P",
-    type: "string",
-    description: "MQTT password",
-    default: process.env.MQTT_PASS || config.mqttPass
-  })
-  .option("devices", {
-    alias: "d",
-    type: "number",
-    description: "Number of concurrent devices",
-    default: DEFAULT_DEVICES
-  })
-  .option("msgs_per_type", {
-    alias: "m",
-    type: "number",
-    description: "Messages per device for each type",
-    default: DEFAULT_MESSAGES_PER_TYPE
-  })
-  .option("pid", {
-    type: "number",
-    description: "PID of the target process to monitor",
-    demandOption: true
-  })
-  .help().argv;
-
-const mqttConnection = `mqtt://${argv.broker}:${argv.port}`;
-const mqttCredentials = {
-  clientId: `test-runner-mt-${Date.now()}`,
-  username: argv.user,
-  password: argv.password
-};
-
-console.log(`Connecting to MQTT: ${mqttConnection}`);
-targetPid = argv.pid;
-console.log(`Monitoring PID: ${targetPid}`);
-
-// --- Helper Functions ---
-
-function connectMqtt(clientIdSuffix) {
-  const uniqueClientId = clientIdSuffix; // Suffix already includes type/device/ts
-  const clientOptions = {
-    ...mqttCredentials,
-    clientId: uniqueClientId
-  };
-  return new Promise((resolve, reject) => {
-    const client = mqtt.connect(mqttConnection, clientOptions);
-    client.on("connect", () => {
-      resolve(client);
-    });
-    client.on("error", (err) => {
-      console.error(`${uniqueClientId}: Connection error:`, err);
-      client.end();
-      reject(err);
-    });
-    client.on("offline", () =>
-      console.warn(`${uniqueClientId}: Client went offline.`)
-    );
-    client.on("reconnect", () =>
-      console.warn(`${uniqueClientId}: Reconnecting...`)
-    );
-  });
+// Initialize MQTT client
+function createMqttClient() {
+  return mqtt.connect(
+    `mqtt://${process.env.MQTT_HOST || config.mqttHost}:${
+      process.env.MQTT_PORT || config.mqttPort
+    }`,
+    {
+      password: process.env.MQTT_PASS || config.mqttPass,
+      username: process.env.MQTT_USER || config.mqttUser
+    }
+  );
 }
 
 function generatePayload(msgType) {
   switch (msgType) {
     case "boolean":
+    case "input":
       return Buffer.from(Math.random() < 0.5 ? "true" : "false");
     case "numero":
+    case "holding":
       // Ensure it's a valid number string
       return Buffer.from(String(Math.random() * 2000 - 1000));
-    case "cadena":
+    case "string":
       return crypto.randomBytes(STRING_PAYLOAD_LENGTH);
     case "json":
       return Buffer.from(
@@ -133,32 +60,19 @@ function generatePayload(msgType) {
   }
 }
 
-async function publishTypedMessages(client, topic, msgType, numMessages) {
-  const clientIdentifier = client.options.clientId;
+async function publishTypedMessages(client, topic, numMessages, msgType) {
   const localLatencies = [];
 
   for (let i = 0; i < numMessages; i++) {
     const messagePayload = generatePayload(msgType);
     const pubStartTime = performance.now();
     try {
-      await new Promise((resolve, reject) => {
-        client.publish(topic, messagePayload, { qos: DEFAULT_QOS }, (err) => {
-          if (err) {
-            console.error(
-              `${clientIdentifier}: Publish error (${msgType}):`,
-              err
-            );
-            reject(err);
-          } else {
-            const pubEndTime = performance.now();
-            localLatencies.push(pubEndTime - pubStartTime);
-            resolve();
-          }
-        });
-      });
+      await client.publish(topic, messagePayload);
+      const pubEndTime = performance.now();
+      localLatencies.push(pubEndTime - pubStartTime);
     } catch (error) {
       // Stop this client's test for this type on error
-      break;
+      continue;
     }
   }
   // Add latencies for this type
@@ -166,7 +80,7 @@ async function publishTypedMessages(client, topic, msgType, numMessages) {
   publishLatencies[msgType].push(...localLatencies);
 }
 
-async function monitorPerformance() {
+async function monitorPerformance(targetPid) {
   if (!targetPid) return;
   try {
     const stats = await pidusage(targetPid);
@@ -183,11 +97,14 @@ async function monitorPerformance() {
   }
 }
 
-function startMonitoring() {
+function startMonitoring(targetPid) {
   if (monitoringIntervalId) clearInterval(monitoringIntervalId);
   cpuUsage = [];
   memoryUsage = [];
-  monitoringIntervalId = setInterval(monitorPerformance, MONITOR_INTERVAL);
+  monitoringIntervalId = setInterval(
+    () => monitorPerformance(targetPid),
+    MONITOR_INTERVAL
+  );
   console.log(`Started monitoring PID ${targetPid}...`);
 }
 
@@ -214,31 +131,35 @@ function calculateStats(array) {
 
 // --- Main Test Logic ---
 
-async function runTestForMessageType(msgType) {
+async function runTestForMessageType(
+  msgType,
+  devices,
+  msgs_per_type,
+  targetPid,
+  http
+) {
   console.log(
-    `\n--- Running test: ${argv.devices} devices, ${argv.msgs_per_type} messages each, type: ${msgType} ---`
+    `\n--- Running test: ${devices} devices, ${msgs_per_type} messages each, type: ${msgType} ---`
   );
   publishLatencies[msgType] = []; // Reset latencies for this type
 
-  startMonitoring();
+  startMonitoring(targetPid);
   const testStartTime = performance.now();
   const devicePromises = [];
 
-  for (let i = 0; i < argv.devices; i++) {
-    const deviceId = `device-${i}`;
-    const uniqueClientId = CLIENT_ID_TEMPLATE.replace("{type}", msgType)
-      .replace("{device_id}", deviceId)
-      .replace("{timestamp}", Date.now());
-    const topic = TEST_TOPIC_TEMPLATE.replace("{device_id}", deviceId);
+  for (let i = 0; i < devices; i++) {
+    const topic = http
+      ? HTTP_TOPIC_TEMPLATE.replace("{msg_type}", msgType)
+      : MODBUS_TOPIC_TEMPLATE.replace("{msg_type}", msgType);
 
     const deviceTask = async () => {
       let client;
       try {
-        client = await connectMqtt(uniqueClientId);
-        await publishTypedMessages(client, topic, msgType, argv.msgs_per_type);
+        client = await createMqttClient();
+        await publishTypedMessages(client, topic, msgs_per_type, msgType);
       } catch (err) {
         console.error(
-          `Device ${uniqueClientId}: Failed during test - ${err.message}`
+          `Device ${client.options.clientId}: Failed during test - ${err.message}`
         );
       } finally {
         if (client && client.connected) {
@@ -257,7 +178,6 @@ async function runTestForMessageType(msgType) {
 
   // --- Calculate Metrics for this type ---
   const totalDurationSec = (testEndTime - testStartTime) / 1000;
-  const totalMessagesSent = argv.msgs_per_type * argv.devices; // Ideal total
 
   const latencyStats = calculateStats(publishLatencies[msgType] || []);
   const actualMessagesSent = latencyStats.count;
@@ -282,12 +202,16 @@ async function runTestForMessageType(msgType) {
   await new Promise((resolve) => setTimeout(resolve, 2000)); // Pause between types
 }
 
-async function runAllTypeTests() {
+async function runAllTypeTests(
+  devices = 5,
+  msgs_per_type = 100,
+  targetPid = null,
+  http = true
+) {
   console.log("--- MQTT Scalability Test (Message Type) ---");
-  console.log(`Broker: ${argv.broker}:${argv.port}`);
-  console.log(`Simulating ${argv.devices} devices.`);
-  console.log(`Messages per type per device: ${argv.msgs_per_type}`);
-  console.log(`Target PID: ${targetPid}`);
+  console.log(`Simulating ${devices} devices.`);
+  console.log(`Messages per type per device: ${msgs_per_type}`);
+  console.log(`Target PID: ${targetPid} ${http ? "HTTP" : "MODBUS"}`);
   console.log("-" * 75);
   console.log(
     "| {:<12} | {:<15} | {:<15} | {:<12} | {:<15} |".format(
@@ -302,8 +226,8 @@ async function runAllTypeTests() {
     "|--------------|-----------------|-----------------|--------------|-----------------|"
   );
 
-  for (const type of MESSAGE_TYPES) {
-    await runTestForMessageType(type);
+  for (const type of http ? MESSAGE_TYPES_HTTP : MESSAGE_TYPES_MODBUS) {
+    await runTestForMessageType(type, devices, msgs_per_type, targetPid, http);
   }
 
   console.log("-" * 75);
@@ -312,10 +236,29 @@ async function runAllTypeTests() {
 }
 
 // --- Execute ---
-runAllTypeTests().catch((err) => {
-  console.error("Test suite failed:", err);
-  process.exit(1);
-});
+// Execute the scalability tests if this script is run directly
+if (require.main === module) {
+  const args = process.argv.slice(2);
+  const httpPid = parseInt(args[0], 10);
+  const modbusPid = parseInt(args[1], 10);
+
+  if (!httpPid || !modbusPid) {
+    console.error("Usage: node scalability.js <httpPid> <modbusPid>");
+    process.exit(1);
+  }
+  await runAllTypeTests(10, 100, httpPid, true).catch((err) => {
+    console.error("Error running scalability tests:", err);
+    process.exit(1);
+  });
+  await runAllTypeTests(10, 100, modbusPid, false).catch((err) => {
+    console.error("Error running scalability tests:", err);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  runScalabilityTests
+};
 
 // Optional: Handle Ctrl+C
 process.on("SIGINT", () => {
