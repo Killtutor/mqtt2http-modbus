@@ -223,13 +223,7 @@ async function runAllTypeTests(
   console.log(`Target PID: ${targetPid} ${http ? "HTTP" : "MODBUS"}`);
   console.log("-" * 75);
   console.log(
-    "| {:<12} | {:<15} | {:<15} | {:<12} | {:<15} |".format(
-      "Tipo Mensaje",
-      "Latencia avg(ms)",
-      "Mensajes/s avg",
-      "CPU avg (%)",
-      "Memoria avg (MB)"
-    )
+    "| Tipo Mensaje | Latencia avg(ms) | Mensajes/s avg | CPU avg (%) | Memoria avg (MB) |"
   );
   console.log(
     "|--------------|-----------------|-----------------|--------------|-----------------|"
@@ -278,11 +272,3 @@ process.on("SIGINT", () => {
   stopMonitoring();
   process.exit(0);
 });
-
-// Helper for basic string formatting (like Python's .format)
-String.prototype.format = function (...args) {
-  let i = 0;
-  return this.replace(/{.*?}/g, (match) =>
-    typeof args[i] !== "undefined" ? args[i++] : match
-  );
-};
