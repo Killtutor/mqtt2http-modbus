@@ -4,12 +4,11 @@ const mqtt = require("mqtt");
 const { performance } = require("perf_hooks");
 const pidusage = require("pidusage");
 const config = require("./config.json");
-const os = require("os"); // Required for CPU monitoring alternative
 const fs = require("fs");
 const path = require("path");
 
 // --- Configuration ---
-const MESSAGE_COUNTS = [100, 500, 2500, 5000];
+const MESSAGE_COUNTS = [10, 50, 250, 500];
 // Find the first sede in config
 const firstSede = config.modbusSedes[0];
 const HTTP_TOPIC_TEMPLATE = "PDVSA_SEDE1_http/numero"; // Topic template for HTTP
@@ -292,9 +291,6 @@ async function resetMessageCounters(isHttp) {
           const data = JSON.parse(message.toString());
           if (data.reset) {
             statsMqttClient.removeListener("message", messageHandler);
-            console.info(
-              `Reset message counter for ${isHttp ? "HTTP" : "MODBUS"}`
-            );
             resolve();
           }
         } catch (e) {
@@ -484,6 +480,9 @@ if (require.main === module) {
     console.error("Usage: node message_count.js <httpPid> <modbusPid>");
     process.exit(1);
   }
+
+  console.info(`HTTP PID: ${httpPid}`);
+  console.info(`MODBUS PID: ${modbusPid}`);
 
   // Run tests with 10 devices
   runAllTests(1, httpPid, modbusPid).catch((err) => {
