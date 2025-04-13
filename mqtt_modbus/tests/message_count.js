@@ -8,7 +8,7 @@ const fs = require("fs");
 const path = require("path");
 
 // --- Configuration ---
-const MESSAGE_COUNTS = [10, 50, 250, 500];
+const MESSAGE_COUNTS = [10, 50, 250, 500, 1000, 2500, 5000];
 // Find the first sede in config
 const firstSede = config.modbusSedes[0];
 const HTTP_TOPIC_TEMPLATE = "PDVSA_SEDE1_http/numero"; // Topic template for HTTP
@@ -30,8 +30,6 @@ let publishLatencies = []; // Array to store publish latencies for calculation
 let cpuUsage = [];
 let memoryUsage = [];
 let monitoringIntervalId = null;
-let targetPid = null; // PID of the process being monitored
-let testResults = []; // To store results for file output
 let currentTestType = ""; // To track whether we're testing HTTP or MODBUS
 let statsMqttClient = null; // MQTT client for stats requests
 
@@ -155,25 +153,14 @@ async function publishMessages(client, deviceId, topic, numMessages, http) {
     const messagePayload = JSON.stringify({ ...basePayload, ts: Date.now() });
     const pubStartTime = performance.now();
     try {
-      await new Promise((resolve, reject) => {
-        client.publish(
-          topic,
-          http ? messagePayload : basePayload.value,
-          { qos: DEFAULT_QOS },
-          (err) => {
-            if (err) {
-              console.error(`${clientIdentifier}: Publish error:`, err);
-              reject(err); // Reject on error
-            } else {
-              const pubEndTime = performance.now();
-              localLatencies.push(pubEndTime - pubStartTime);
-              resolve(); // Resolve on success
-            }
-          }
-        );
+      await client.publish(topic, http ? messagePayload : basePayload.value, {
+        qos: DEFAULT_QOS
       });
+
+      const pubEndTime = performance.now();
+      localLatencies.push(pubEndTime - pubStartTime);
     } catch (error) {
-      break; // Stop publishing for this client on error
+      continue; // Stop publishing for this client on error
     }
   }
 }
@@ -219,6 +206,7 @@ function stopMonitoring(pid) {
 }
 
 function calculateStats(array) {
+  console.info(`Calculating stats for ${array.length} elements`);
   if (!array || array.length === 0)
     return { avg: 0, min: 0, max: 0, p95: 0, count: 0 };
 
@@ -243,8 +231,17 @@ async function getProcessedMessageCount(isHttp) {
       ? HTTP_STATS_RESPONSE_TOPIC
       : MODBUS_STATS_RESPONSE_TOPIC;
 
+    // Set timeout
+    const timeout = setTimeout(() => {
+      statsMqttClient.removeListener("message", messageHandler);
+      console.warn(
+        `Timeout getting message count for ${isHttp ? "HTTP" : "Modbus"}`
+      );
+      resolve(0);
+    }, 50000);
     // Set up response handler
     const messageHandler = (topic, message) => {
+      clearTimeout(timeout);
       if (topic === responseTopic) {
         try {
           const data = JSON.parse(message.toString());
@@ -262,15 +259,6 @@ async function getProcessedMessageCount(isHttp) {
 
     // Send request
     statsMqttClient.publish(requestTopic, "");
-
-    // Set timeout
-    setTimeout(() => {
-      statsMqttClient.removeListener("message", messageHandler);
-      console.warn(
-        `Timeout getting message count for ${isHttp ? "HTTP" : "Modbus"}`
-      );
-      resolve(0);
-    }, 50000);
   });
 }
 
@@ -387,9 +375,9 @@ async function runTestForMessageCount(numMessages, devices, pid, http) {
       .toFixed(2)
       .padEnd(15)} | ${avgMsgPerSec.toFixed(2).padEnd(15)} | ${avgCpu
       .toFixed(2)
-      .padEnd(12)} | ${avgMem.toFixed(2).padEnd(15)} | ${processedCount
-      .toString()
-      .padEnd(10)} |`
+      .padEnd(12)} | ${avgMem.toFixed(2).padEnd(15)} | ${
+      processedCount / (http ? 2 : 1).toString().padEnd(10)
+    } |`
   );
 
   // Save to file
