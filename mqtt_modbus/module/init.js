@@ -13,7 +13,7 @@ const procesos = {
 //   { silent: false }
 // );
 procesos.scalability = fork(
-  "../tests/message_types.js",
+  "../tests/message_count.js",
   [procesos.httpServer.pid, procesos.modbusSlave.pid],
   { silent: false }
 );

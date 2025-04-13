@@ -4,14 +4,14 @@ const mqtt = require("mqtt");
 const { performance } = require("perf_hooks");
 const pidusage = require("pidusage");
 const config = require("./config.json");
-const yargs = require("yargs/yargs");
-const { hideBin } = require("yargs/helpers");
 const os = require("os"); // Required for CPU monitoring alternative
 
 // --- Configuration ---
-const DEFAULT_DEVICES = 5;
 const MESSAGE_COUNTS = [10, 50, 100, 200];
-const TEST_TOPIC_TEMPLATE = "test/device/{device_id}/data"; // Topic template
+// Find the first sede in config
+const firstSede = config.modbusSedes[0];
+const HTTP_TOPIC_TEMPLATE = "PDVSA_SEDE1_http/numero"; // Topic template for HTTP
+const MODBUS_TOPIC_TEMPLATE = `${firstSede.nombre}/1/holding/0`; // Topic template for Modbus
 const CLIENT_ID_TEMPLATE = "scalability-tester-mc-{device_id}-{timestamp}"; // Unique client ID
 const DEFAULT_QOS = 1;
 const MONITOR_INTERVAL = 1000; // ms for CPU/Mem sampling
@@ -23,72 +23,26 @@ let memoryUsage = [];
 let monitoringIntervalId = null;
 let targetPid = null; // PID of the process being monitored
 
-// --- Argument Parsing ---
-const argv = yargs(hideBin(process.argv))
-  .option("broker", {
-    alias: "b",
-    type: "string",
-    description: "MQTT broker address",
-    default: process.env.MQTT_HOST || config.mqttHost || "localhost"
-  })
-  .option("port", {
-    alias: "p",
-    type: "number",
-    description: "MQTT broker port",
-    default: process.env.MQTT_PORT || config.mqttPort || 1883
-  })
-  .option("user", {
-    alias: "u",
-    type: "string",
-    description: "MQTT user",
-    default: process.env.MQTT_USER || config.mqttUser
-  })
-  .option("password", {
-    alias: "P",
-    type: "string",
-    description: "MQTT password",
-    default: process.env.MQTT_PASS || config.mqttPass
-  })
-  .option("devices", {
-    alias: "d",
-    type: "number",
-    description: "Number of concurrent devices",
-    default: DEFAULT_DEVICES
-  })
-  .option("pid", {
-    type: "number",
-    description:
-      "PID of the target process to monitor (e.g., MQTT broker or bridge)",
-    demandOption: true // Make PID required
-  })
-  .help().argv;
-
-const mqttConnection = `mqtt://${argv.broker}:${argv.port}`;
-const mqttCredentials = {
-  clientId: `test-runner-mc-${Date.now()}`, // Unique ID for the test runner itself
-  username: argv.user,
-  password: argv.password
-};
-
-console.log(`Connecting to MQTT: ${mqttConnection}`);
-targetPid = argv.pid;
-console.log(`Monitoring PID: ${targetPid}`);
-
 // --- Helper Functions ---
-
 function connectMqtt(clientIdSuffix) {
   const uniqueClientId = CLIENT_ID_TEMPLATE.replace(
     "{device_id}",
     clientIdSuffix
   ).replace("{timestamp}", Date.now());
+
   const clientOptions = {
-    ...mqttCredentials,
-    clientId: uniqueClientId
+    clientId: uniqueClientId,
+    username: process.env.MQTT_USER || config.mqttUser,
+    password: process.env.MQTT_PASS || config.mqttPass
   };
+
+  const mqttConnection = `mqtt://${process.env.MQTT_HOST || config.mqttHost}:${
+    process.env.MQTT_PORT || config.mqttPort
+  }`;
+
   return new Promise((resolve, reject) => {
     const client = mqtt.connect(mqttConnection, clientOptions);
     client.on("connect", () => {
-      // console.log(`${uniqueClientId}: Connected`); // Reduce noise
       resolve(client);
     });
     client.on("error", (err) => {
@@ -98,7 +52,6 @@ function connectMqtt(clientIdSuffix) {
     });
     client.on("offline", () => {
       console.warn(`${uniqueClientId}: Client went offline.`);
-      // Optionally handle reconnection or failure
     });
     client.on("reconnect", () => {
       console.warn(`${uniqueClientId}: Reconnecting...`);
@@ -109,9 +62,8 @@ function connectMqtt(clientIdSuffix) {
 async function publishMessages(client, deviceId, topic, numMessages) {
   const clientIdentifier = client.options.clientId; // Get the unique client ID
   const localLatencies = [];
-  const basePayload = { value: "test_payload", ts: 0 }; // Basic payload
+  const basePayload = { value: Math.random() * 2000 - 1000, ts: 0 }; // Random numeric value
 
-  // console.log(`${clientIdentifier}: Publishing ${numMessages} messages to ${topic}...`); // Reduce noise
   const startPubTime = performance.now();
 
   for (let i = 0; i < numMessages; i++) {
@@ -130,28 +82,20 @@ async function publishMessages(client, deviceId, topic, numMessages) {
           }
         });
       });
-      // await new Promise(resolve => setTimeout(resolve, 1)); // Small artificial delay if needed
     } catch (error) {
-      // Error already logged in the promise rejection
-      // Decide if we should continue or stop the test for this client
       break; // Stop publishing for this client on error
     }
   }
 
   const endPubTime = performance.now();
-  const totalPubDuration = endPubTime - startPubTime;
-  // console.log(`${clientIdentifier}: Finished ${numMessages} messages in ${totalPubDuration.toFixed(2)}ms.`); // Reduce noise
-
-  // Add latencies to global array (needs locking in concurrent env, but JS is single-threaded for this part)
   publishLatencies.push(...localLatencies);
 }
 
-async function monitorPerformance() {
-  if (!targetPid) {
-    return;
-  }
+async function monitorPerformance(pid) {
+  if (!pid) return;
+
   try {
-    const stats = await pidusage(targetPid);
+    const stats = await pidusage(pid);
     cpuUsage.push(stats.cpu);
     memoryUsage.push(stats.memory / 1024 / 1024); // Convert to MB
   } catch (error) {
@@ -160,26 +104,29 @@ async function monitorPerformance() {
       if (monitoringIntervalId) clearInterval(monitoringIntervalId);
       monitoringIntervalId = null;
     } else {
-      console.error(`Error monitoring PID ${targetPid}:`, error);
+      console.error(`Error monitoring PID ${pid}:`, error);
     }
   }
 }
 
-function startMonitoring() {
-  if (monitoringIntervalId) clearInterval(monitoringIntervalId); // Clear previous interval if any
+function startMonitoring(pid) {
+  if (monitoringIntervalId) clearInterval(monitoringIntervalId);
   cpuUsage = [];
   memoryUsage = [];
   // Run once immediately to start collecting data
-  monitorPerformance();
-  monitoringIntervalId = setInterval(monitorPerformance, MONITOR_INTERVAL);
+  monitorPerformance(pid);
+  monitoringIntervalId = setInterval(
+    () => monitorPerformance(pid),
+    MONITOR_INTERVAL
+  );
 }
 
-function stopMonitoring() {
+function stopMonitoring(pid) {
   if (monitoringIntervalId) {
     clearInterval(monitoringIntervalId);
     monitoringIntervalId = null;
     // Run one final time to capture final state
-    return monitorPerformance();
+    return monitorPerformance(pid);
   }
   return Promise.resolve();
 }
@@ -200,20 +147,22 @@ function calculateStats(array) {
 }
 
 // --- Main Test Logic ---
-
-async function runTestForMessageCount(numMessages) {
-  console.log(
-    `\n--- Running test: ${argv.devices} devices, ${numMessages} messages each ---`
+async function runTestForMessageCount(numMessages, devices, pid, http) {
+  console.info(
+    `\n--- Running test: ${devices} devices, ${numMessages} messages each ---`
   );
   publishLatencies = []; // Reset latencies for this run
 
-  startMonitoring();
+  startMonitoring(pid);
   const testStartTime = performance.now();
   const devicePromises = [];
 
-  for (let i = 0; i < argv.devices; i++) {
+  // Select the appropriate topic template based on interface type
+  const topicTemplate = http ? HTTP_TOPIC_TEMPLATE : MODBUS_TOPIC_TEMPLATE;
+
+  for (let i = 0; i < devices; i++) {
     const deviceId = `device-${i}`;
-    const topic = TEST_TOPIC_TEMPLATE.replace("{device_id}", deviceId);
+    const topic = topicTemplate;
 
     const deviceTask = async () => {
       let client;
@@ -231,23 +180,18 @@ async function runTestForMessageCount(numMessages) {
       }
     };
     devicePromises.push(deviceTask());
-    // await new Promise(resolve => setTimeout(resolve, 20)); // Stagger connections slightly
   }
 
   await Promise.allSettled(devicePromises); // Wait for all devices to finish or fail
 
   const testEndTime = performance.now();
-  await stopMonitoring(); // Stop before calculations
+  await stopMonitoring(pid); // Stop monitoring before calculations
 
   // --- Calculate Metrics ---
   const totalDurationSec = (testEndTime - testStartTime) / 1000;
-  const totalMessagesSent = numMessages * argv.devices; // Ideal total
 
   // Latency (using collected publish latencies)
   const latencyStats = calculateStats(publishLatencies);
-
-  // Messages/s: Total messages confirmed sent / total test duration
-  // Note: publishLatencies.length reflects successful publishes tracked
   const actualMessagesSent = latencyStats.count;
   const avgMsgPerSec = actualMessagesSent / totalDurationSec || 0;
 
@@ -262,7 +206,7 @@ async function runTestForMessageCount(numMessages) {
       : 0;
 
   // Output results for this message count
-  console.log(
+  console.info(
     `| ${String(numMessages).padEnd(10)} | ${latencyStats.avg
       .toFixed(2)
       .padEnd(15)} | ${avgMsgPerSec.toFixed(2).padEnd(15)} | ${avgCpu
@@ -270,48 +214,86 @@ async function runTestForMessageCount(numMessages) {
       .padEnd(12)} | ${avgMem.toFixed(2).padEnd(15)} |`
   );
 
-  // Optional: Add a delay between tests
+  // Add a delay between tests
   await new Promise((resolve) => setTimeout(resolve, 2000));
 }
 
-async function runAllTests() {
-  console.log("--- MQTT Scalability Test (Message Count) ---");
-  console.log(`Broker: ${argv.broker}:${argv.port}`);
-  console.log(`Simulating ${argv.devices} devices.`);
-  console.log(`Target PID: ${targetPid}`);
-  console.log(`Waiting 5 seconds before starting tests...`);
+async function runAllTests(devices = 5, httpPid, modbusPid) {
+  // First run HTTP tests
+  console.info("--- MQTT Scalability Test (Message Count - HTTP) ---");
+  console.info(`Simulating ${devices} devices.`);
+  console.info(`Target PID: ${httpPid} HTTP`);
+  console.info(`Waiting 15 seconds before starting tests...`);
 
-  // Add 5 second timeout before starting tests
-  await new Promise((resolve) => setTimeout(resolve, 5000));
+  // Add timeout before starting tests
+  await new Promise((resolve) => setTimeout(resolve, 15000));
 
-  console.log("-".repeat(70));
-  console.log(
+  console.info("-".repeat(75));
+  console.info(
     "| Messages     | Latency avg(ms) | Messages/s avg | CPU avg (%) | Memory avg (MB) |"
   );
-  console.log(
+  console.info(
     "|------------|-----------------|-----------------|--------------|-----------------|"
   );
 
   for (const count of MESSAGE_COUNTS) {
-    await runTestForMessageCount(count);
+    await runTestForMessageCount(count, devices, httpPid, true);
   }
 
-  console.log("-".repeat(70));
-  console.log("All tests complete.");
-  // Ensure the main process exits cleanly if needed, especially if intervals aren't cleared properly
-  process.exit(0);
+  console.info("-".repeat(75));
+  console.info("HTTP tests complete.");
+
+  // Then run Modbus tests
+  console.info("\n--- MQTT Scalability Test (Message Count - MODBUS) ---");
+  console.info(`Simulating ${devices} devices.`);
+  console.info(`Target PID: ${modbusPid} MODBUS`);
+  console.info(`Waiting 15 seconds before starting tests...`);
+
+  // Add timeout before starting tests
+  await new Promise((resolve) => setTimeout(resolve, 15000));
+
+  console.info("-".repeat(75));
+  console.info(
+    "| Messages     | Latency avg(ms) | Messages/s avg | CPU avg (%) | Memory avg (MB) |"
+  );
+  console.info(
+    "|------------|-----------------|-----------------|--------------|-----------------|"
+  );
+
+  for (const count of MESSAGE_COUNTS) {
+    await runTestForMessageCount(count, devices, modbusPid, false);
+  }
+
+  console.info("-".repeat(75));
+  console.info("All tests complete.");
 }
 
 // --- Execute ---
-runAllTests().catch((err) => {
-  console.error("Test suite failed:", err);
-  process.exit(1);
-});
+if (require.main === module) {
+  const args = process.argv.slice(2);
+  const httpPid = parseInt(args[0], 10);
+  const modbusPid = parseInt(args[1], 10);
 
-// Optional: Handle Ctrl+C for graceful shutdown
+  if (!httpPid || !modbusPid) {
+    console.error("Usage: node message_count.js <httpPid> <modbusPid>");
+    process.exit(1);
+  }
+
+  // Run tests with 10 devices
+  runAllTests(10, httpPid, modbusPid).catch((err) => {
+    console.error("Test suite failed:", err);
+    process.exit(1);
+  });
+}
+
+// Export for use in other modules
+module.exports = {
+  runAllTests
+};
+
+// Handle Ctrl+C for graceful shutdown
 process.on("SIGINT", () => {
-  console.log("\nCaught interrupt signal. Shutting down...");
-  stopMonitoring();
-  // Add any other cleanup needed for clients etc.
+  console.info("\nCaught interrupt signal. Shutting down...");
+  if (monitoringIntervalId) clearInterval(monitoringIntervalId);
   process.exit(0);
 });
