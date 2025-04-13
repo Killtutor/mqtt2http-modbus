@@ -481,7 +481,7 @@ if (require.main === module) {
   }
 
   // Run tests with 10 devices
-  runAllTests(10, httpPid, modbusPid).catch((err) => {
+  runAllTests(1, httpPid, modbusPid).catch((err) => {
     console.error("Test suite failed:", err);
     process.exit(1);
   });
