@@ -91,10 +91,10 @@ client.on("message", async function (topic, message) {
     return;
   }
 
+  const proTopic = topic.split("/");
   if (proTopic[0] === "$SYS") {
     return;
   }
-  const proTopic = topic.split("/");
   const sede = proTopic[0];
   const RTU = parseInt(proTopic[1]);
   const retype = retTypeTranslator[proTopic[2]] ?? "ir";
