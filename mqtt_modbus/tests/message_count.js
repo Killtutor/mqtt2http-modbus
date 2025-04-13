@@ -148,9 +148,6 @@ function calculateStats(array) {
 
 // --- Main Test Logic ---
 async function runTestForMessageCount(numMessages, devices, pid, http) {
-  console.info(
-    `\n--- Running test: ${devices} devices, ${numMessages} messages each ---`
-  );
   publishLatencies = []; // Reset latencies for this run
 
   startMonitoring(pid);
