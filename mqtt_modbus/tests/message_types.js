@@ -4,7 +4,8 @@ const mqtt = require("mqtt");
 const { performance } = require("perf_hooks");
 const pidusage = require("pidusage");
 const config = require("./config.json");
-const crypto = require("crypto"); // For generating random strings
+const fs = require("fs");
+const path = require("path");
 
 // Find the first sede in config
 const firstSede = config.modbusSedes[0];
@@ -21,6 +22,43 @@ let publishLatencies = {}; // { type: [latencies] }
 let cpuUsage = [];
 let memoryUsage = [];
 let monitoringIntervalId = null;
+let testResults = []; // To store results for file output
+let currentTestType = ""; // To track whether we're testing HTTP or MODBUS
+
+// --- File Output ---
+const timestamp = new Date()
+  .toISOString()
+  .replace(/:/g, "-")
+  .replace(/\..+/, "");
+const resultsDir = path.join(__dirname, "results");
+const resultsFilename = `message_types_results_${timestamp}.csv`;
+const resultsPath = path.join(resultsDir, resultsFilename);
+
+// Ensure results directory exists
+function setupResultsDirectory() {
+  if (!fs.existsSync(resultsDir)) {
+    fs.mkdirSync(resultsDir, { recursive: true });
+  }
+  // Create CSV header
+  const header =
+    "Interface,MessageType,Latency_avg_ms,Messages_per_sec,CPU_avg_percent,Memory_avg_MB\n";
+  fs.writeFileSync(resultsPath, header);
+  console.info(`Results will be saved to: ${resultsPath}`);
+}
+
+// Function to save a single test result
+function saveTestResult(
+  messageType,
+  latencyAvg,
+  messagesPerSec,
+  cpuAvg,
+  memAvg
+) {
+  const resultLine = `${currentTestType},${messageType},${latencyAvg.toFixed(
+    2
+  )},${messagesPerSec.toFixed(2)},${cpuAvg.toFixed(2)},${memAvg.toFixed(2)}\n`;
+  fs.appendFileSync(resultsPath, resultLine);
+}
 
 // Initialize MQTT client
 function createMqttClient() {
@@ -198,6 +236,9 @@ async function runTestForMessageType(
       .padEnd(12)} | ${avgMem.toFixed(2).padEnd(15)} |`
   );
 
+  // Save to file
+  saveTestResult(msgType, latencyStats.avg, avgMsgPerSec, avgCpu, avgMem);
+
   await new Promise((resolve) => setTimeout(resolve, 2000)); // Pause between types
 }
 
@@ -207,6 +248,9 @@ async function runAllTypeTests(
   targetPid = null,
   http = true
 ) {
+  // Set current test type
+  currentTestType = http ? "HTTP" : "MODBUS";
+
   console.info("--- MQTT Scalability Test (Message Type) ---");
   console.info(`Simulating ${devices} devices.`);
   console.info(`Messages per type per device: ${msgs_per_type}`);
@@ -229,7 +273,7 @@ async function runAllTypeTests(
   }
 
   console.info("-".repeat(75));
-  console.info("All tests complete.");
+  console.info(`${currentTestType} tests complete.`);
 }
 
 // --- Execute ---
@@ -244,11 +288,15 @@ if (require.main === module) {
     process.exit(1);
   }
 
+  // Setup results directory and file
+  setupResultsDirectory();
+
   // Run HTTP tests first, then Modbus tests
   (async () => {
     try {
       await runAllTypeTests(10, 300, httpPid, true);
       await runAllTypeTests(10, 300, modbusPid, false);
+      console.info(`Full results saved to: ${resultsPath}`);
       process.exit(0);
     } catch (err) {
       console.error("Error running tests:", err);

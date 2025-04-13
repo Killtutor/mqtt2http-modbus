@@ -71,10 +71,30 @@ const retTypeTranslator = {
 //retype could be input, coil, holding, discrete
 let mensajes = 0;
 client.on("message", async function (topic, message) {
-  const proTopic = topic.split("/");
+  // Check if this is a stats request
+  if (topic === "modbus_module/stats/request") {
+    // Publish current count to the stats response topic
+    client.publish(
+      "modbus_module/stats/response",
+      JSON.stringify({ processedMessages: mensajes })
+    );
+    return;
+  }
+
+  // Check if this is a reset request
+  if (topic === "modbus_module/stats/reset") {
+    mensajes = 0;
+    client.publish(
+      "modbus_module/stats/response",
+      JSON.stringify({ processedMessages: mensajes, reset: true })
+    );
+    return;
+  }
+
   if (proTopic[0] === "$SYS") {
     return;
   }
+  const proTopic = topic.split("/");
   const sede = proTopic[0];
   const RTU = parseInt(proTopic[1]);
   const retype = retTypeTranslator[proTopic[2]] ?? "ir";
@@ -109,8 +129,13 @@ client.on("message", async function (topic, message) {
   }
   mensajes += 1;
 });
+
 // Init Function, Runs once on server livespan
 const initialize = async () => {
+  // Subscribe to stats topics
+  client.subscribe("modbus_module/stats/request");
+  client.subscribe("modbus_module/stats/reset");
+
   client.subscribe("$SYS/#");
   for (const sede of config.modbusSedes) {
     console.log("🚀 ~ initialize ~ sede:", sede);
@@ -118,6 +143,14 @@ const initialize = async () => {
     await redis.set("lastUsedPort", String(sede.port));
     client.subscribe(`${sede.nombre}/#`);
   }
+
+  // Publish stats periodically
+  setInterval(() => {
+    client.publish(
+      "modbus_module/stats",
+      JSON.stringify({ processedMessages: mensajes })
+    );
+  }, 30000); // every 30 seconds
 };
 if (require.main === module) {
   // ran with `node init.js`

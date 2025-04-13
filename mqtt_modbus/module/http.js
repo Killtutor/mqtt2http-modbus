@@ -9,6 +9,9 @@ const bodyParser = require("body-parser");
 const mqtt = require("mqtt");
 const { default: axios } = require("axios");
 
+// Message counter
+let processedMessages = 0;
+
 const initialize = async () => {
   ////////// MQTT Functions //////////////
   // Inicialize the mqtt client
@@ -28,6 +31,26 @@ const initialize = async () => {
   // On message we need to proccess any message
   // formato esperado: sede/parametro
   client.on("message", function (topic, message) {
+    // Check if this is a stats request
+    if (topic === "http_module/stats/request") {
+      // Publish current count to the stats response topic
+      client.publish(
+        "http_module/stats/response",
+        JSON.stringify({ processedMessages })
+      );
+      return;
+    }
+
+    // Check if this is a reset request
+    if (topic === "http_module/stats/reset") {
+      processedMessages = 0;
+      client.publish(
+        "http_module/stats/response",
+        JSON.stringify({ processedMessages, reset: true })
+      );
+      return;
+    }
+
     const proTopic = topic.split("/");
     const sede = proTopic.shift();
     const parametro = proTopic.shift();
@@ -54,6 +77,7 @@ const initialize = async () => {
           .subtract(4, "hours")
           .format("YYYYMMDDHHMMSS")}`;
         axios.get(toSend);
+        processedMessages++; // Increment counter for each key processed
       }
     } catch (error) {
       const toSend = `http://tomcat:8080/httpds?&${parametro}=${encodeURI(
@@ -61,6 +85,7 @@ const initialize = async () => {
       )}&__device=${sede}&__time=${dayjs()
         .subtract(4, "hours")
         .format("YYYYMMDDHHMMSS")}`;
+      processedMessages++; // Increment counter
       return axios.get(toSend);
     }
   });
@@ -76,8 +101,17 @@ const initialize = async () => {
     );
   });
 
+  // Subscribe to stats request topics
+  client.subscribe("http_module/stats/request");
+  client.subscribe("http_module/stats/reset");
+
   for (const device of config.httpRealTime.devices) {
     client.subscribe(`${device.nombre}/#`);
   }
+
+  // Publish stats periodically
+  setInterval(() => {
+    client.publish("http_module/stats", JSON.stringify({ processedMessages }));
+  }, 30000); // every 30 seconds
 };
 initialize();

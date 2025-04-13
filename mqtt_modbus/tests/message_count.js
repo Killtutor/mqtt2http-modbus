@@ -18,6 +18,14 @@ const CLIENT_ID_TEMPLATE = "scalability-tester-mc-{device_id}-{timestamp}"; // U
 const DEFAULT_QOS = 1;
 const MONITOR_INTERVAL = 1000; // ms for CPU/Mem sampling
 
+// Topics for stats
+const HTTP_STATS_REQUEST_TOPIC = "http_module/stats/request";
+const HTTP_STATS_RESPONSE_TOPIC = "http_module/stats/response";
+const HTTP_STATS_RESET_TOPIC = "http_module/stats/reset";
+const MODBUS_STATS_REQUEST_TOPIC = "modbus_module/stats/request";
+const MODBUS_STATS_RESPONSE_TOPIC = "modbus_module/stats/response";
+const MODBUS_STATS_RESET_TOPIC = "modbus_module/stats/reset";
+
 // --- Globals ---
 let publishLatencies = []; // Array to store publish latencies for calculation
 let cpuUsage = [];
@@ -26,6 +34,7 @@ let monitoringIntervalId = null;
 let targetPid = null; // PID of the process being monitored
 let testResults = []; // To store results for file output
 let currentTestType = ""; // To track whether we're testing HTTP or MODBUS
+let statsMqttClient = null; // MQTT client for stats requests
 
 // --- File Output ---
 const timestamp = new Date()
@@ -43,7 +52,7 @@ function setupResultsDirectory() {
   }
   // Create CSV header
   const header =
-    "Interface,Messages,Latency_avg_ms,Messages_per_sec,CPU_avg_percent,Memory_avg_MB\n";
+    "Interface,Messages,Latency_avg_ms,Messages_per_sec,CPU_avg_percent,Memory_avg_MB,Processed_Messages\n";
   fs.writeFileSync(resultsPath, header);
   console.info(`Results will be saved to: ${resultsPath}`);
 }
@@ -54,11 +63,14 @@ function saveTestResult(
   latencyAvg,
   messagesPerSec,
   cpuAvg,
-  memAvg
+  memAvg,
+  processedCount
 ) {
   const resultLine = `${currentTestType},${messageCount},${latencyAvg.toFixed(
     2
-  )},${messagesPerSec.toFixed(2)},${cpuAvg.toFixed(2)},${memAvg.toFixed(2)}\n`;
+  )},${messagesPerSec.toFixed(2)},${cpuAvg.toFixed(2)},${memAvg.toFixed(
+    2
+  )},${processedCount}\n`;
   fs.appendFileSync(resultsPath, resultLine);
 }
 
@@ -94,6 +106,43 @@ function connectMqtt(clientIdSuffix) {
     });
     client.on("reconnect", () => {
       console.warn(`${uniqueClientId}: Reconnecting...`);
+    });
+  });
+}
+
+// Connect dedicated MQTT client for stats
+async function setupStatsMqttClient() {
+  if (statsMqttClient) {
+    await new Promise((resolve) => {
+      statsMqttClient.end(true, {}, resolve);
+    });
+  }
+
+  const clientId = `stats-requester-${Date.now()}`;
+  const clientOptions = {
+    clientId,
+    username: process.env.MQTT_USER || config.mqttUser,
+    password: process.env.MQTT_PASS || config.mqttPass
+  };
+
+  const mqttConnection = `mqtt://${process.env.MQTT_HOST || config.mqttHost}:${
+    process.env.MQTT_PORT || config.mqttPort
+  }`;
+
+  return new Promise((resolve, reject) => {
+    statsMqttClient = mqtt.connect(mqttConnection, clientOptions);
+
+    statsMqttClient.on("connect", () => {
+      // Subscribe to stats response topics
+      statsMqttClient.subscribe(HTTP_STATS_RESPONSE_TOPIC);
+      statsMqttClient.subscribe(MODBUS_STATS_RESPONSE_TOPIC);
+      console.info(`Stats MQTT client connected with ID: ${clientId}`);
+      resolve(statsMqttClient);
+    });
+
+    statsMqttClient.on("error", (err) => {
+      console.error(`Stats MQTT client error:`, err);
+      reject(err);
     });
   });
 }
@@ -185,8 +234,97 @@ function calculateStats(array) {
   return { avg, min, max, p95, count: sorted.length };
 }
 
+// --- Get Processed Message Count via MQTT ---
+async function getProcessedMessageCount(isHttp) {
+  return new Promise((resolve, reject) => {
+    const requestTopic = isHttp
+      ? HTTP_STATS_REQUEST_TOPIC
+      : MODBUS_STATS_REQUEST_TOPIC;
+    const responseTopic = isHttp
+      ? HTTP_STATS_RESPONSE_TOPIC
+      : MODBUS_STATS_RESPONSE_TOPIC;
+
+    // Set up response handler
+    const messageHandler = (topic, message) => {
+      if (topic === responseTopic) {
+        try {
+          const data = JSON.parse(message.toString());
+          statsMqttClient.removeListener("message", messageHandler);
+          resolve(data.processedMessages || 0);
+        } catch (e) {
+          console.error("Error parsing stats response:", e);
+          resolve(0);
+        }
+      }
+    };
+
+    // Add message handler
+    statsMqttClient.on("message", messageHandler);
+
+    // Send request
+    statsMqttClient.publish(requestTopic, "");
+
+    // Set timeout
+    setTimeout(() => {
+      statsMqttClient.removeListener("message", messageHandler);
+      console.warn(
+        `Timeout getting message count for ${isHttp ? "HTTP" : "Modbus"}`
+      );
+      resolve(0);
+    }, 5000);
+  });
+}
+
+// --- Reset Message Counters via MQTT ---
+async function resetMessageCounters(isHttp) {
+  return new Promise((resolve) => {
+    const resetTopic = isHttp
+      ? HTTP_STATS_RESET_TOPIC
+      : MODBUS_STATS_RESET_TOPIC;
+    const responseTopic = isHttp
+      ? HTTP_STATS_RESPONSE_TOPIC
+      : MODBUS_STATS_RESPONSE_TOPIC;
+
+    // Set up response handler
+    const messageHandler = (topic, message) => {
+      if (topic === responseTopic) {
+        try {
+          const data = JSON.parse(message.toString());
+          if (data.reset) {
+            statsMqttClient.removeListener("message", messageHandler);
+            console.info(
+              `Reset message counter for ${isHttp ? "HTTP" : "MODBUS"}`
+            );
+            resolve();
+          }
+        } catch (e) {
+          // Ignore parsing errors
+        }
+      }
+    };
+
+    // Add message handler
+    statsMqttClient.on("message", messageHandler);
+
+    // Send request
+    statsMqttClient.publish(resetTopic, "");
+
+    // Set timeout
+    setTimeout(() => {
+      statsMqttClient.removeListener("message", messageHandler);
+      console.warn(
+        `Timeout resetting message count for ${isHttp ? "HTTP" : "Modbus"}`
+      );
+      resolve();
+    }, 5000);
+  });
+}
+
 // --- Main Test Logic ---
 async function runTestForMessageCount(numMessages, devices, pid, http) {
+  // Reset message counters before starting the test
+  await resetMessageCounters(http);
+
   publishLatencies = []; // Reset latencies for this run
 
   startMonitoring(pid);
@@ -223,6 +361,12 @@ async function runTestForMessageCount(numMessages, devices, pid, http) {
   const testEndTime = performance.now();
   await stopMonitoring(pid); // Stop monitoring before calculations
 
+  // --- Give some time for messages to be processed ---
+  await new Promise((resolve) => setTimeout(resolve, 5000));
+
+  // --- Get the processed message count ---
+  const processedCount = await getProcessedMessageCount(http);
+
   // --- Calculate Metrics ---
   const totalDurationSec = (testEndTime - testStartTime) / 1000;
 
@@ -247,11 +391,20 @@ async function runTestForMessageCount(numMessages, devices, pid, http) {
       .toFixed(2)
       .padEnd(15)} | ${avgMsgPerSec.toFixed(2).padEnd(15)} | ${avgCpu
       .toFixed(2)
-      .padEnd(12)} | ${avgMem.toFixed(2).padEnd(15)} |`
+      .padEnd(12)} | ${avgMem.toFixed(2).padEnd(15)} | ${processedCount
+      .toString()
+      .padEnd(10)} |`
   );
 
   // Save to file
-  saveTestResult(numMessages, latencyStats.avg, avgMsgPerSec, avgCpu, avgMem);
+  saveTestResult(
+    numMessages,
+    latencyStats.avg,
+    avgMsgPerSec,
+    avgCpu,
+    avgMem,
+    processedCount
+  );
 
   // Add a delay between tests
   await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -260,6 +413,9 @@ async function runTestForMessageCount(numMessages, devices, pid, http) {
 async function runAllTests(devices = 5, httpPid, modbusPid) {
   // Setup results directory and file
   setupResultsDirectory();
+
+  // Setup MQTT client for stats
+  await setupStatsMqttClient();
 
   // First run HTTP tests
   currentTestType = "HTTP";
@@ -271,19 +427,19 @@ async function runAllTests(devices = 5, httpPid, modbusPid) {
   // Add timeout before starting tests
   await new Promise((resolve) => setTimeout(resolve, 15000));
 
-  console.info("-".repeat(75));
+  console.info("-".repeat(90));
   console.info(
-    "| Messages     | Latency avg(ms) | Messages/s avg | CPU avg (%) | Memory avg (MB) |"
+    "| Messages     | Latency avg(ms) | Messages/s avg | CPU avg (%) | Memory avg (MB) | Processed |"
   );
   console.info(
-    "|------------|-----------------|-----------------|--------------|-----------------|"
+    "|------------|-----------------|-----------------|--------------|-----------------|-----------|"
   );
 
   for (const count of MESSAGE_COUNTS) {
     await runTestForMessageCount(count, devices, httpPid, true);
   }
 
-  console.info("-".repeat(75));
+  console.info("-".repeat(90));
   console.info("HTTP tests complete.");
 
   // Then run Modbus tests
@@ -296,21 +452,26 @@ async function runAllTests(devices = 5, httpPid, modbusPid) {
   // Add timeout before starting tests
   await new Promise((resolve) => setTimeout(resolve, 15000));
 
-  console.info("-".repeat(75));
+  console.info("-".repeat(90));
   console.info(
-    "| Messages     | Latency avg(ms) | Messages/s avg | CPU avg (%) | Memory avg (MB) |"
+    "| Messages     | Latency avg(ms) | Messages/s avg | CPU avg (%) | Memory avg (MB) | Processed |"
   );
   console.info(
-    "|------------|-----------------|-----------------|--------------|-----------------|"
+    "|------------|-----------------|-----------------|--------------|-----------------|-----------|"
   );
 
   for (const count of MESSAGE_COUNTS) {
     await runTestForMessageCount(count, devices, modbusPid, false);
   }
 
-  console.info("-".repeat(75));
+  console.info("-".repeat(90));
   console.info("All tests complete.");
   console.info(`Full results saved to: ${resultsPath}`);
+
+  // Clean up MQTT client
+  if (statsMqttClient) {
+    statsMqttClient.end();
+  }
 }
 
 // --- Execute ---
@@ -340,5 +501,6 @@ module.exports = {
 process.on("SIGINT", () => {
   console.info("\nCaught interrupt signal. Shutting down...");
   if (monitoringIntervalId) clearInterval(monitoringIntervalId);
+  if (statsMqttClient) statsMqttClient.end();
   process.exit(0);
 });
