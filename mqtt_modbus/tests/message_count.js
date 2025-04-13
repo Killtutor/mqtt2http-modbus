@@ -144,9 +144,7 @@ async function setupStatsMqttClient() {
   });
 }
 
-async function publishMessages(client, deviceId, topic, numMessages, http) {
-  const clientIdentifier = client.options.clientId; // Get the unique client ID
-  const localLatencies = [];
+async function publishMessages(client, topic, numMessages, http) {
   const basePayload = { value: Math.random() * 2000 - 1000, ts: 0 }; // Random numeric value
 
   for (let i = 0; i < numMessages; i++) {
@@ -158,7 +156,7 @@ async function publishMessages(client, deviceId, topic, numMessages, http) {
       });
 
       const pubEndTime = performance.now();
-      localLatencies.push(pubEndTime - pubStartTime);
+      publishLatencies.push(pubEndTime - pubStartTime);
     } catch (error) {
       continue; // Stop publishing for this client on error
     }
@@ -326,7 +324,7 @@ async function runTestForMessageCount(numMessages, devices, pid, http) {
       let client;
       try {
         client = await connectMqtt(deviceId);
-        await publishMessages(client, deviceId, topic, numMessages, http);
+        await publishMessages(client, topic, numMessages, http);
       } catch (err) {
         console.error(
           `Device ${deviceId}: Failed during test - ${err.message}`
@@ -375,9 +373,11 @@ async function runTestForMessageCount(numMessages, devices, pid, http) {
       .toFixed(2)
       .padEnd(15)} | ${avgMsgPerSec.toFixed(2).padEnd(15)} | ${avgCpu
       .toFixed(2)
-      .padEnd(12)} | ${avgMem.toFixed(2).padEnd(15)} | ${
-      processedCount / (http ? 2 : 1).toString().padEnd(10)
-    } |`
+      .padEnd(12)} | ${avgMem.toFixed(2).padEnd(15)} | ${(
+      processedCount / (http ? 2 : 1)
+    )
+      .toString()
+      .padEnd(10)} |`
   );
 
   // Save to file
@@ -387,7 +387,7 @@ async function runTestForMessageCount(numMessages, devices, pid, http) {
     avgMsgPerSec,
     avgCpu,
     avgMem,
-    processedCount
+    processedCount / (http ? 2 : 1)
   );
 
   // Add a delay between tests
