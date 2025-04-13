@@ -5,9 +5,11 @@ const { performance } = require("perf_hooks");
 const pidusage = require("pidusage");
 const config = require("./config.json");
 const os = require("os"); // Required for CPU monitoring alternative
+const fs = require("fs");
+const path = require("path");
 
 // --- Configuration ---
-const MESSAGE_COUNTS = [100, 500, 10000, 40000];
+const MESSAGE_COUNTS = [100, 500, 2500, 5000];
 // Find the first sede in config
 const firstSede = config.modbusSedes[0];
 const HTTP_TOPIC_TEMPLATE = "PDVSA_SEDE1_http/numero"; // Topic template for HTTP
@@ -22,6 +24,43 @@ let cpuUsage = [];
 let memoryUsage = [];
 let monitoringIntervalId = null;
 let targetPid = null; // PID of the process being monitored
+let testResults = []; // To store results for file output
+let currentTestType = ""; // To track whether we're testing HTTP or MODBUS
+
+// --- File Output ---
+const timestamp = new Date()
+  .toISOString()
+  .replace(/:/g, "-")
+  .replace(/\..+/, "");
+const resultsDir = path.join(__dirname, "results");
+const resultsFilename = `message_count_results_${timestamp}.csv`;
+const resultsPath = path.join(resultsDir, resultsFilename);
+
+// Ensure results directory exists
+function setupResultsDirectory() {
+  if (!fs.existsSync(resultsDir)) {
+    fs.mkdirSync(resultsDir, { recursive: true });
+  }
+  // Create CSV header
+  const header =
+    "Interface,Messages,Latency_avg_ms,Messages_per_sec,CPU_avg_percent,Memory_avg_MB\n";
+  fs.writeFileSync(resultsPath, header);
+  console.info(`Results will be saved to: ${resultsPath}`);
+}
+
+// Function to save a single test result
+function saveTestResult(
+  messageCount,
+  latencyAvg,
+  messagesPerSec,
+  cpuAvg,
+  memAvg
+) {
+  const resultLine = `${currentTestType},${messageCount},${latencyAvg.toFixed(
+    2
+  )},${messagesPerSec.toFixed(2)},${cpuAvg.toFixed(2)},${memAvg.toFixed(2)}\n`;
+  fs.appendFileSync(resultsPath, resultLine);
+}
 
 // --- Helper Functions ---
 function connectMqtt(clientIdSuffix) {
@@ -211,12 +250,19 @@ async function runTestForMessageCount(numMessages, devices, pid, http) {
       .padEnd(12)} | ${avgMem.toFixed(2).padEnd(15)} |`
   );
 
+  // Save to file
+  saveTestResult(numMessages, latencyStats.avg, avgMsgPerSec, avgCpu, avgMem);
+
   // Add a delay between tests
   await new Promise((resolve) => setTimeout(resolve, 2000));
 }
 
 async function runAllTests(devices = 5, httpPid, modbusPid) {
+  // Setup results directory and file
+  setupResultsDirectory();
+
   // First run HTTP tests
+  currentTestType = "HTTP";
   console.info("--- MQTT Scalability Test (Message Count - HTTP) ---");
   console.info(`Simulating ${devices} devices.`);
   console.info(`Target PID: ${httpPid} HTTP`);
@@ -241,6 +287,7 @@ async function runAllTests(devices = 5, httpPid, modbusPid) {
   console.info("HTTP tests complete.");
 
   // Then run Modbus tests
+  currentTestType = "MODBUS";
   console.info("\n--- MQTT Scalability Test (Message Count - MODBUS) ---");
   console.info(`Simulating ${devices} devices.`);
   console.info(`Target PID: ${modbusPid} MODBUS`);
@@ -263,6 +310,7 @@ async function runAllTests(devices = 5, httpPid, modbusPid) {
 
   console.info("-".repeat(75));
   console.info("All tests complete.");
+  console.info(`Full results saved to: ${resultsPath}`);
 }
 
 // --- Execute ---
