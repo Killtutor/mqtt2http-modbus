@@ -7,7 +7,7 @@ const config = require("./config.json");
 const os = require("os"); // Required for CPU monitoring alternative
 
 // --- Configuration ---
-const MESSAGE_COUNTS = [10, 50, 100, 200];
+const MESSAGE_COUNTS = [100, 500, 10000, 40000];
 // Find the first sede in config
 const firstSede = config.modbusSedes[0];
 const HTTP_TOPIC_TEMPLATE = "PDVSA_SEDE1_http/numero"; // Topic template for HTTP
