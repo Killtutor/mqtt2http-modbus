@@ -9,7 +9,7 @@ const fs = require("fs");
 const path = require("path");
 
 // --- Configuration ---
-const MESSAGE_COUNTS = [100, 500, 2500, 5000];
+const MESSAGE_COUNTS = [100, 500, 2500, 5000, 10000];
 // Find the first sede in config
 const firstSede = config.modbusSedes[0];
 const HTTP_TOPIC_TEMPLATE = "PDVSA_SEDE1_http/numero"; // Topic template for HTTP
