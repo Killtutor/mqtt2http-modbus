@@ -147,7 +147,7 @@ async function setupStatsMqttClient() {
   });
 }
 
-async function publishMessages(client, deviceId, topic, numMessages) {
+async function publishMessages(client, deviceId, topic, numMessages, http) {
   const clientIdentifier = client.options.clientId; // Get the unique client ID
   const localLatencies = [];
   const basePayload = { value: Math.random() * 2000 - 1000, ts: 0 }; // Random numeric value
@@ -157,16 +157,21 @@ async function publishMessages(client, deviceId, topic, numMessages) {
     const pubStartTime = performance.now();
     try {
       await new Promise((resolve, reject) => {
-        client.publish(topic, messagePayload, { qos: DEFAULT_QOS }, (err) => {
-          if (err) {
-            console.error(`${clientIdentifier}: Publish error:`, err);
-            reject(err); // Reject on error
-          } else {
-            const pubEndTime = performance.now();
-            localLatencies.push(pubEndTime - pubStartTime);
-            resolve(); // Resolve on success
+        client.publish(
+          topic,
+          http ? messagePayload : basePayload.value,
+          { qos: DEFAULT_QOS },
+          (err) => {
+            if (err) {
+              console.error(`${clientIdentifier}: Publish error:`, err);
+              reject(err); // Reject on error
+            } else {
+              const pubEndTime = performance.now();
+              localLatencies.push(pubEndTime - pubStartTime);
+              resolve(); // Resolve on success
+            }
           }
-        });
+        );
       });
     } catch (error) {
       break; // Stop publishing for this client on error
@@ -337,7 +342,7 @@ async function runTestForMessageCount(numMessages, devices, pid, http) {
       let client;
       try {
         client = await connectMqtt(deviceId);
-        await publishMessages(client, deviceId, topic, numMessages);
+        await publishMessages(client, deviceId, topic, numMessages, http);
       } catch (err) {
         console.error(
           `Device ${deviceId}: Failed during test - ${err.message}`
