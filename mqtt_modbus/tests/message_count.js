@@ -311,7 +311,7 @@ async function resetMessageCounters(isHttp) {
         `Timeout resetting message count for ${isHttp ? "HTTP" : "Modbus"}`
       );
       resolve();
-    }, 5000);
+    }, 50000);
   });
 }
 

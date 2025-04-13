@@ -85,8 +85,15 @@ const initialize = async () => {
       )}&__device=${sede}&__time=${dayjs()
         .subtract(4, "hours")
         .format("YYYYMMDDHHMMSS")}`;
-      processedMessages++; // Increment counter
-      return axios.get(toSend);
+
+      try {
+        axios.get(toSend);
+        processedMessages++; // Increment counter
+        return true;
+      } catch (error) {
+        console.error(`Error sending message to HTTP: ${error}`);
+        return false;
+      }
     }
   });
 
@@ -108,10 +115,5 @@ const initialize = async () => {
   for (const device of config.httpRealTime.devices) {
     client.subscribe(`${device.nombre}/#`);
   }
-
-  // Publish stats periodically
-  setInterval(() => {
-    client.publish("http_module/stats", JSON.stringify({ processedMessages }));
-  }, 30000); // every 30 seconds
 };
 initialize();
