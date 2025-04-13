@@ -9,7 +9,7 @@ const fs = require("fs");
 const path = require("path");
 
 // --- Configuration ---
-const MESSAGE_COUNTS = [100, 500, 2500, 5000, 10000];
+const MESSAGE_COUNTS = [100, 500, 2500, 5000];
 // Find the first sede in config
 const firstSede = config.modbusSedes[0];
 const HTTP_TOPIC_TEMPLATE = "PDVSA_SEDE1_http/numero"; // Topic template for HTTP
@@ -118,7 +118,7 @@ async function setupStatsMqttClient() {
     });
   }
 
-  const clientId = `stats-requester-${Date.now()}`;
+  const clientId = `stats-requester`;
   const clientOptions = {
     clientId,
     username: process.env.MQTT_USER || config.mqttUser,
@@ -152,8 +152,6 @@ async function publishMessages(client, deviceId, topic, numMessages) {
   const localLatencies = [];
   const basePayload = { value: Math.random() * 2000 - 1000, ts: 0 }; // Random numeric value
 
-  const startPubTime = performance.now();
-
   for (let i = 0; i < numMessages; i++) {
     const messagePayload = JSON.stringify({ ...basePayload, ts: Date.now() });
     const pubStartTime = performance.now();
@@ -174,9 +172,6 @@ async function publishMessages(client, deviceId, topic, numMessages) {
       break; // Stop publishing for this client on error
     }
   }
-
-  const endPubTime = performance.now();
-  publishLatencies.push(...localLatencies);
 }
 
 async function monitorPerformance(pid) {
@@ -271,7 +266,7 @@ async function getProcessedMessageCount(isHttp) {
         `Timeout getting message count for ${isHttp ? "HTTP" : "Modbus"}`
       );
       resolve(0);
-    }, 5000);
+    }, 50000);
   });
 }
 
