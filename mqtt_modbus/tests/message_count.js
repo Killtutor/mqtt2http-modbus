@@ -146,6 +146,7 @@ async function setupStatsMqttClient() {
 }
 
 async function publishMessages(client, topic, numMessages, http) {
+  console.log("🚀 ~ publishMessages ~ numMessages:", numMessages);
   const basePayload = { value: Math.random() * 2000 - 1000, ts: 0 }; // Random numeric value
 
   for (let i = 0; i < numMessages; i++) {
@@ -163,6 +164,7 @@ async function publishMessages(client, topic, numMessages, http) {
       const pubEndTime = performance.now();
       publishLatencies.push(pubEndTime - pubStartTime - timeToDiscount);
     } catch (error) {
+      console.log("🚀 ~ publishMessages ~ error:", error);
       i--;
       continue; // Stop publishing for this client on error
     }
@@ -423,7 +425,7 @@ async function runTestForMessageCount(numMessages, devices, pid, http) {
   await new Promise((resolve) => setTimeout(resolve, 2000));
 }
 
-async function runAllTests(devices = DEFAULT_DEVICE_COUNT, httpPid, modbusPid) {
+async function runAllTests(devices = 1, httpPid, modbusPid) {
   // Setup results directory and file
   setupResultsDirectory();
 
