@@ -9,7 +9,7 @@ const path = require("path");
 
 // --- Configuration ---
 const MESSAGE_COUNTS = [10, 50, 100, 250, 500];
-const DEFAULT_DEVICE_COUNT = 5; // Default number of devices to simulate
+const DEFAULT_DEVICE_COUNT = 1; // Default number of devices to simulate
 // Find the first sede in config
 const firstSede = config.modbusSedes[0];
 const HTTP_TOPIC_TEMPLATE = "PDVSA_SEDE1_http/string1"; // Topic template for HTTP
