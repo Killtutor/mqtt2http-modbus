@@ -170,7 +170,7 @@ const initialize = async () => {
           }
         });
 
-        processedMessages += successCount;
+        processedMessages++;
       } catch (error) {
         // Not a valid JSON, treat as single parameter
         if (!(error instanceof SyntaxError)) {
