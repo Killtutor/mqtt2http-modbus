@@ -150,7 +150,9 @@ async function publishMessages(client, topic, numMessages, http) {
     const messagePayload = JSON.stringify({ ...basePayload, ts: Date.now() });
     const pubStartTime = performance.now();
     try {
-      await client.publish(topic, http ? messagePayload : basePayload.value);
+      await client.publish(topic, http ? messagePayload : basePayload.value, {
+        qos: 1
+      });
 
       const pubEndTime = performance.now();
       publishLatencies.push(pubEndTime - pubStartTime);
