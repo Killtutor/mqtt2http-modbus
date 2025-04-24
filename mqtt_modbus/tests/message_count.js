@@ -8,7 +8,7 @@ const fs = require("fs");
 const path = require("path");
 
 // --- Configuration ---
-const MESSAGE_COUNTS = [10, 50, 100, 250, 500, 600, 700, 800, 900];
+const MESSAGE_COUNTS = [10, 50, 100, 250, 500, 600, 700, 800, 850];
 // Find the first sede in config
 const firstSede = config.modbusSedes[0];
 const HTTP_TOPIC_TEMPLATE = "PDVSA_SEDE1_http/string1"; // Topic template for HTTP
@@ -201,7 +201,6 @@ function stopMonitoring(pid) {
 }
 
 function calculateStats(array) {
-  console.info(`Calculating stats for ${array.length} elements`);
   if (!array || array.length === 0)
     return { avg: 0, min: 0, max: 0, p95: 0, count: 0 };
 
@@ -352,6 +351,11 @@ async function runTestForMessageCount(numMessages, devices, pid, http) {
   // Latency (using collected publish latencies)
   const latencyStats = calculateStats(publishLatencies);
   const actualMessagesSent = latencyStats.count;
+  console.log(
+    "🚀 ~ runTestForMessageCount ~ totalDurationSec:",
+    totalDurationSec,
+    publishLatencies.length
+  );
   const avgMsgPerSec = actualMessagesSent / totalDurationSec || 0;
 
   // CPU/Memory Avg
