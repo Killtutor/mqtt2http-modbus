@@ -99,7 +99,7 @@ async function testHttpModule(httpPid) {
 
     messageCount++;
     if (messageCount % 1000 === 0) {
-      console.log(`Message count: ${messageCount}, date: ${new Date()}`);
+      console.log(`Message count: ${messageCount} HTTP, date: ${new Date()}`);
     }
 
     if (messageCount >= NUM_MESSAGES) {
@@ -154,6 +154,10 @@ async function testModbusModule(modbusPid) {
     modbusLatencies.push(endReadTime - startReadTime);
 
     messageCount++;
+
+    if (messageCount % 1000 === 0) {
+      console.log(`Message count: ${messageCount} MODBUS, date: ${new Date()}`);
+    }
 
     if (messageCount >= NUM_MESSAGES) {
       clearInterval(messageInterval);
@@ -290,6 +294,7 @@ async function runPerformanceTests(httpPid, modbusPid) {
   await testModbusModule(modbusPid);
 
   // Generate report
+  await new Promise((resolve) => setTimeout(resolve, 60000));
   generateReport();
 
   client.end();
