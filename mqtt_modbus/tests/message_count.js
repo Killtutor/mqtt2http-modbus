@@ -9,10 +9,12 @@ const path = require("path");
 
 // --- Configuration ---
 const MESSAGE_COUNTS = [10, 50, 100, 250, 500];
+const DEFAULT_DEVICE_COUNT = 5; // Default number of devices to simulate
 // Find the first sede in config
 const firstSede = config.modbusSedes[0];
 const HTTP_TOPIC_TEMPLATE = "PDVSA_SEDE1_http/string1"; // Topic template for HTTP
-const MODBUS_TOPIC_TEMPLATE = `${firstSede.nombre}/1/holding/0`; // Topic template for Modbus
+const MODBUS_TOPIC_BASE = `${firstSede.nombre}`; // Base topic for Modbus
+const MODBUS_TOPIC_TEMPLATE = `${MODBUS_TOPIC_BASE}/1/holding/0`; // Topic template for Modbus
 const CLIENT_ID_TEMPLATE = "scalability-tester-mc-{device_id}-{timestamp}"; // Unique client ID
 const MONITOR_INTERVAL = 1000; // ms for CPU/Mem sampling
 
@@ -146,30 +148,25 @@ async function setupStatsMqttClient() {
 async function publishMessages(client, topic, numMessages, http) {
   const basePayload = { value: Math.random() * 2000 - 1000, ts: 0 }; // Random numeric value
 
-  const pubStartTime = performance.now();
   for (let i = 0; i < numMessages; i++) {
     const messagePayload = JSON.stringify({ ...basePayload, ts: Date.now() });
     try {
-      await client.publish(topic, http ? messagePayload : basePayload.value, {
-        qos: 2
+      const pubStartTime = performance.now();
+      // For Modbus, we need to send the value as a string to ensure it's properly parsed
+      const payload = http
+        ? messagePayload
+        : String(Math.floor(basePayload.value));
+
+      await client.publish(topic, payload, {
+        qos: 1
       });
+      const pubEndTime = performance.now();
+      publishLatencies.push(pubEndTime - pubStartTime - timeToDiscount);
     } catch (error) {
       i--;
       continue; // Stop publishing for this client on error
     }
   }
-  let timeToDiscount = 0;
-  const timeToDiscountStart = performance.now();
-  let processedMessages = await getProcessedMessageCount(http);
-  const timeToDiscountEnd = performance.now();
-  timeToDiscount += timeToDiscountEnd - timeToDiscountStart;
-  while (processedMessages < numMessages) {
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    processedMessages = await getProcessedMessageCount(http);
-    timeToDiscount += performance.now() - timeToDiscountStart;
-  }
-  const pubEndTime = performance.now();
-  publishLatencies.push(pubEndTime - pubStartTime - timeToDiscount);
 }
 
 async function monitorPerformance(pid) {
@@ -241,20 +238,27 @@ async function getProcessedMessageCount(isHttp) {
     const timeout = setTimeout(() => {
       statsMqttClient.removeListener("message", messageHandler);
       console.warn(
-        `Timeout getting message count for ${isHttp ? "HTTP" : "Modbus"}`
+        `Timeout (50s) waiting for message count for ${
+          isHttp ? "HTTP" : "Modbus"
+        } module`
       );
       resolve(0);
     }, 50000);
+
     // Set up response handler
     const messageHandler = (topic, message) => {
-      clearTimeout(timeout);
       if (topic === responseTopic) {
+        clearTimeout(timeout);
         try {
           const data = JSON.parse(message.toString());
           statsMqttClient.removeListener("message", messageHandler);
           resolve(data.processedMessages || 0);
         } catch (e) {
-          console.error("Error parsing stats response:", e);
+          console.error(
+            `Error parsing stats response from ${responseTopic}:`,
+            e
+          );
+          statsMqttClient.removeListener("message", messageHandler);
           resolve(0);
         }
       }
@@ -278,17 +282,35 @@ async function resetMessageCounters(isHttp) {
       ? HTTP_STATS_RESPONSE_TOPIC
       : MODBUS_STATS_RESPONSE_TOPIC;
 
+    // Set timeout
+    const timeout = setTimeout(() => {
+      statsMqttClient.removeListener("message", messageHandler);
+      console.warn(
+        `Timeout (50s) waiting for reset confirmation from ${
+          isHttp ? "HTTP" : "Modbus"
+        } module`
+      );
+      resolve();
+    }, 50000);
+
     // Set up response handler
     const messageHandler = (topic, message) => {
       if (topic === responseTopic) {
         try {
           const data = JSON.parse(message.toString());
           if (data.reset) {
+            clearTimeout(timeout);
             statsMqttClient.removeListener("message", messageHandler);
             resolve();
           }
         } catch (e) {
-          // Ignore parsing errors
+          console.error(
+            `Error parsing reset response from ${responseTopic}:`,
+            e
+          );
+          clearTimeout(timeout);
+          statsMqttClient.removeListener("message", messageHandler);
+          resolve();
         }
       }
     };
@@ -298,15 +320,6 @@ async function resetMessageCounters(isHttp) {
 
     // Send request
     statsMqttClient.publish(resetTopic, "");
-
-    // Set timeout
-    setTimeout(() => {
-      statsMqttClient.removeListener("message", messageHandler);
-      console.warn(
-        `Timeout resetting message count for ${isHttp ? "HTTP" : "Modbus"}`
-      );
-      resolve();
-    }, 50000);
   });
 }
 
@@ -326,7 +339,10 @@ async function runTestForMessageCount(numMessages, devices, pid, http) {
 
   for (let i = 0; i < devices; i++) {
     const deviceId = `device-${i}`;
-    const topic = topicTemplate;
+    // Generate device-specific topic if needed
+    const topic = http
+      ? topicTemplate
+      : `${MODBUS_TOPIC_BASE}/${i + 1}/holding/0`;
 
     const deviceTask = async () => {
       let client;
@@ -407,7 +423,7 @@ async function runTestForMessageCount(numMessages, devices, pid, http) {
   await new Promise((resolve) => setTimeout(resolve, 2000));
 }
 
-async function runAllTests(devices = 5, httpPid, modbusPid) {
+async function runAllTests(devices = DEFAULT_DEVICE_COUNT, httpPid, modbusPid) {
   // Setup results directory and file
   setupResultsDirectory();
 
@@ -476,17 +492,21 @@ if (require.main === module) {
   const args = process.argv.slice(2);
   const httpPid = parseInt(args[0], 10);
   const modbusPid = parseInt(args[1], 10);
+  const deviceCount = parseInt(args[2] || 1, 10) || DEFAULT_DEVICE_COUNT;
 
   if (!httpPid || !modbusPid) {
-    console.error("Usage: node message_count.js <httpPid> <modbusPid>");
+    console.error(
+      "Usage: node message_count.js <httpPid> <modbusPid> [deviceCount]"
+    );
     process.exit(1);
   }
 
   console.info(`HTTP PID: ${httpPid}`);
   console.info(`MODBUS PID: ${modbusPid}`);
+  console.info(`Device Count: ${deviceCount}`);
 
-  // Run tests with 10 devices
-  runAllTests(1, httpPid, modbusPid).catch((err) => {
+  // Run tests with configured number of devices
+  runAllTests(deviceCount, httpPid, modbusPid).catch((err) => {
     console.error("Test suite failed:", err);
     process.exit(1);
   });
