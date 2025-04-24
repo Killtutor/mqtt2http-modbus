@@ -8,7 +8,7 @@ const fs = require("fs");
 const path = require("path");
 
 // --- Configuration ---
-const MESSAGE_COUNTS = [10, 50, 100, 250, 500];
+const MESSAGE_COUNTS = [10, 25, 50, 100, 200, 500];
 const DEFAULT_DEVICE_COUNT = 1; // Default number of devices to simulate
 // Find the first sede in config
 const firstSede = config.modbusSedes[0];
@@ -148,26 +148,77 @@ async function setupStatsMqttClient() {
 async function publishMessages(client, topic, numMessages, http) {
   const basePayload = { value: Math.random() * 2000 - 1000, ts: 0 }; // Random numeric value
 
+  let publishedCount = 0;
+  let processedCount = 0;
+  const pubStartTime = performance.now();
+
+  // First, publish all messages with throttling
   for (let i = 0; i < numMessages; i++) {
     const messagePayload = JSON.stringify({ ...basePayload, ts: Date.now() });
     try {
-      const pubStartTime = performance.now();
       // For Modbus, we need to send the value as a string to ensure it's properly parsed
-      const payload = http
+      let payload = http
         ? messagePayload
-        : String(Math.floor(basePayload.value));
+        : String(Math.round(basePayload.value)); // Round to integer
+
+      // Ensure payload is in acceptable format for modbus
+      if (
+        !http &&
+        (isNaN(parseInt(payload)) ||
+          parseInt(payload) < -32768 ||
+          parseInt(payload) > 32767)
+      ) {
+        // If value is out of modbus register range, use a safe default
+        payload = "0";
+      }
 
       await client.publish(topic, payload, {
-        qos: 1
+        qos: 2 // Use QoS 2 for reliability
       });
-      const pubEndTime = performance.now();
-      publishLatencies.push(pubEndTime - pubStartTime);
+
+      publishedCount++;
+
+      // Add throttling to prevent flooding
+      if (i > 0 && i % 10 === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
     } catch (error) {
-      console.log("🚀 ~ publishMessages ~ error:", error);
-      i--;
-      continue; // Stop publishing for this client on error
+      console.error("Publish error:", error);
+      i--; // Retry this message
+      await new Promise((resolve) => setTimeout(resolve, 100)); // Wait before retry
+      continue;
     }
   }
+
+  // Now wait for processing to complete with timeout protection
+  const maxWaitTime = 60000; // 60 seconds max wait
+  const waitStartTime = performance.now();
+  let timeWaiting = 0;
+
+  while (processedCount < numMessages && timeWaiting < maxWaitTime) {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    processedCount = await getProcessedMessageCount(http);
+    timeWaiting = performance.now() - waitStartTime;
+
+    // Log progress for long-running tests
+    if (processedCount > 0 && processedCount % 50 === 0) {
+      console.log(
+        `Progress: ${processedCount}/${numMessages} messages processed`
+      );
+    }
+  }
+
+  if (processedCount < numMessages) {
+    console.warn(
+      `Timeout waiting for message processing. Only ${processedCount}/${numMessages} processed.`
+    );
+  }
+
+  const pubEndTime = performance.now();
+  const totalTime = pubEndTime - pubStartTime;
+  publishLatencies.push(totalTime);
+
+  return processedCount;
 }
 
 async function monitorPerformance(pid) {
@@ -334,6 +385,7 @@ async function runTestForMessageCount(numMessages, devices, pid, http) {
   startMonitoring(pid);
   const testStartTime = performance.now();
   const devicePromises = [];
+  let totalProcessedMessages = 0;
 
   // Select the appropriate topic template based on interface type
   const topicTemplate = http ? HTTP_TOPIC_TEMPLATE : MODBUS_TOPIC_TEMPLATE;
@@ -349,7 +401,13 @@ async function runTestForMessageCount(numMessages, devices, pid, http) {
       let client;
       try {
         client = await connectMqtt(deviceId);
-        await publishMessages(client, topic, numMessages, http);
+        const processedCount = await publishMessages(
+          client,
+          topic,
+          numMessages,
+          http
+        );
+        totalProcessedMessages += processedCount;
       } catch (err) {
         console.error(
           `Device ${deviceId}: Failed during test - ${err.message}`
@@ -368,23 +426,25 @@ async function runTestForMessageCount(numMessages, devices, pid, http) {
   const testEndTime = performance.now();
   await stopMonitoring(pid); // Stop monitoring before calculations
 
-  // --- Give some time for messages to be processed ---
-  await new Promise((resolve) => setTimeout(resolve, 5000));
-
-  // --- Get the processed message count ---
-  const processedCount = await getProcessedMessageCount(http);
+  // --- Get the final processed message count if needed ---
+  if (totalProcessedMessages === 0) {
+    totalProcessedMessages = await getProcessedMessageCount(http);
+  }
 
   // --- Calculate Metrics ---
   const totalDurationSec = (testEndTime - testStartTime) / 1000;
 
   // Latency (using collected publish latencies)
   const latencyStats = calculateStats(publishLatencies);
-  const actualMessagesSent = latencyStats.count;
+  const actualMessagesSent = devices * numMessages; // What we attempted to send
+  const messagesPerDevice = Math.floor(totalProcessedMessages / devices);
+
   console.log(
-    "🚀 ~ runTestForMessageCount ~ totalDurationSec:",
-    totalDurationSec,
-    publishLatencies.length
+    `Test duration: ${totalDurationSec.toFixed(
+      2
+    )}s, sent ${actualMessagesSent}, processed ${totalProcessedMessages}`
   );
+
   const avgMsgPerSec = actualMessagesSent / totalDurationSec || 0;
 
   // CPU/Memory Avg
@@ -403,9 +463,7 @@ async function runTestForMessageCount(numMessages, devices, pid, http) {
       .toFixed(2)
       .padEnd(15)} | ${avgMsgPerSec.toFixed(2).padEnd(15)} | ${avgCpu
       .toFixed(2)
-      .padEnd(12)} | ${avgMem.toFixed(2).padEnd(15)} | ${(
-      processedCount / (http ? 2 : 1)
-    )
+      .padEnd(12)} | ${avgMem.toFixed(2).padEnd(15)} | ${messagesPerDevice
       .toString()
       .padEnd(10)} |`
   );
@@ -417,14 +475,14 @@ async function runTestForMessageCount(numMessages, devices, pid, http) {
     avgMsgPerSec,
     avgCpu,
     avgMem,
-    processedCount / (http ? 2 : 1)
+    messagesPerDevice
   );
 
-  // Add a delay between tests
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+  // Add a delay between tests to allow system to stabilize
+  await new Promise((resolve) => setTimeout(resolve, 5000));
 }
 
-async function runAllTests(devices = 1, httpPid, modbusPid) {
+async function runAllTests(devices = DEFAULT_DEVICE_COUNT, httpPid, modbusPid) {
   // Setup results directory and file
   setupResultsDirectory();
 
