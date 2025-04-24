@@ -8,7 +8,7 @@ const fs = require("fs");
 const path = require("path");
 
 // --- Configuration ---
-const MESSAGE_COUNTS = [10, 50, 100, 250, 500, 600, 700, 800, 850];
+const MESSAGE_COUNTS = [10, 50, 100, 250, 500, 600, 700, 800, 850, 900];
 // Find the first sede in config
 const firstSede = config.modbusSedes[0];
 const HTTP_TOPIC_TEMPLATE = "PDVSA_SEDE1_http/string1"; // Topic template for HTTP
@@ -146,20 +146,30 @@ async function setupStatsMqttClient() {
 async function publishMessages(client, topic, numMessages, http) {
   const basePayload = { value: Math.random() * 2000 - 1000, ts: 0 }; // Random numeric value
 
+  const pubStartTime = performance.now();
   for (let i = 0; i < numMessages; i++) {
     const messagePayload = JSON.stringify({ ...basePayload, ts: Date.now() });
-    const pubStartTime = performance.now();
     try {
       await client.publish(topic, http ? messagePayload : basePayload.value, {
-        qos: 1
+        qos: 2
       });
-
-      const pubEndTime = performance.now();
-      publishLatencies.push(pubEndTime - pubStartTime);
     } catch (error) {
+      i--;
       continue; // Stop publishing for this client on error
     }
   }
+  let timeToDiscount = 0;
+  const timeToDiscountStart = performance.now();
+  let processedMessages = await getProcessedMessageCount(http);
+  const timeToDiscountEnd = performance.now();
+  timeToDiscount += timeToDiscountEnd - timeToDiscountStart;
+  while (processedMessages < numMessages) {
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    processedMessages = await getProcessedMessageCount(http);
+    timeToDiscount += performance.now() - timeToDiscountStart;
+  }
+  const pubEndTime = performance.now();
+  publishLatencies.push(pubEndTime - pubStartTime - timeToDiscount);
 }
 
 async function monitorPerformance(pid) {
