@@ -8,7 +8,7 @@ const fs = require("fs");
 const path = require("path");
 
 // --- Configuration ---
-const MESSAGE_COUNTS = [10, 25, 50, 100, 200, 500];
+const MESSAGE_COUNTS = [10, 25, 50, 100, 200, 500, 600, 700, 800, 900];
 const DEFAULT_DEVICE_COUNT = 1; // Default number of devices to simulate
 // Find the first sede in config
 const firstSede = config.modbusSedes[0];

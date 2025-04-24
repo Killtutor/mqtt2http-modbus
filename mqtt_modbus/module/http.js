@@ -161,9 +161,6 @@ const initialize = async () => {
           const successCount = results.filter(
             (r) => r.status === "fulfilled"
           ).length;
-          if (successCount > 0) {
-            processedMessages += successCount;
-          }
 
           const failedCount = results.filter(
             (r) => r.status === "rejected"
@@ -172,6 +169,8 @@ const initialize = async () => {
             console.warn(`${failedCount} requests failed for topic ${topic}`);
           }
         });
+
+        processedMessages += successCount;
       } catch (error) {
         // Not a valid JSON, treat as single parameter
         if (!(error instanceof SyntaxError)) {
