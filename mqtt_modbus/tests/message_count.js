@@ -146,7 +146,6 @@ async function setupStatsMqttClient() {
 }
 
 async function publishMessages(client, topic, numMessages, http) {
-  console.log("🚀 ~ publishMessages ~ numMessages:", numMessages);
   const basePayload = { value: Math.random() * 2000 - 1000, ts: 0 }; // Random numeric value
 
   for (let i = 0; i < numMessages; i++) {
@@ -162,7 +161,7 @@ async function publishMessages(client, topic, numMessages, http) {
         qos: 1
       });
       const pubEndTime = performance.now();
-      publishLatencies.push(pubEndTime - pubStartTime - timeToDiscount);
+      publishLatencies.push(pubEndTime - pubStartTime);
     } catch (error) {
       console.log("🚀 ~ publishMessages ~ error:", error);
       i--;
