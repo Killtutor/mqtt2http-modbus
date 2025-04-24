@@ -150,7 +150,7 @@ const initialize = async () => {
 
         const requests = [];
         for (const key in jsonMessage) {
-          const toSend = `http://tomcat:8080/httpds?&${key}=${encodeURI(
+          const toSend = `http://tomcat:8080/httpds?${key}=${encodeURI(
             jsonMessage[key]
           )}&__device=${sede}&__time=${timestamp}`;
 
