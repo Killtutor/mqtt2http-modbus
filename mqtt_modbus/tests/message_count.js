@@ -11,10 +11,9 @@ const path = require("path");
 const MESSAGE_COUNTS = [10, 50, 250, 500, 1000, 2500, 5000];
 // Find the first sede in config
 const firstSede = config.modbusSedes[0];
-const HTTP_TOPIC_TEMPLATE = "PDVSA_SEDE1_http/numero"; // Topic template for HTTP
+const HTTP_TOPIC_TEMPLATE = "PDVSA_SEDE1_http/string1"; // Topic template for HTTP
 const MODBUS_TOPIC_TEMPLATE = `${firstSede.nombre}/1/holding/0`; // Topic template for Modbus
 const CLIENT_ID_TEMPLATE = "scalability-tester-mc-{device_id}-{timestamp}"; // Unique client ID
-const DEFAULT_QOS = 1;
 const MONITOR_INTERVAL = 1000; // ms for CPU/Mem sampling
 
 // Topics for stats
@@ -151,9 +150,7 @@ async function publishMessages(client, topic, numMessages, http) {
     const messagePayload = JSON.stringify({ ...basePayload, ts: Date.now() });
     const pubStartTime = performance.now();
     try {
-      await client.publish(topic, http ? messagePayload : basePayload.value, {
-        qos: DEFAULT_QOS
-      });
+      await client.publish(topic, http ? messagePayload : basePayload.value);
 
       const pubEndTime = performance.now();
       publishLatencies.push(pubEndTime - pubStartTime);

@@ -20,7 +20,7 @@ const config = require("./config.json");
 
 // Test configuration
 const TEST_DURATION = 120000; // 2 minute in ms
-const MESSAGE_INTERVAL = 10; // ms between messages
+const MESSAGE_INTERVAL = 1; // ms between messages
 const NUM_MESSAGES = Math.floor(TEST_DURATION / MESSAGE_INTERVAL);
 const SAMPLE_INTERVAL = 1000; // 1 second sampling interval for CPU/mem
 const TEST_MODULES = ["http", "modbus"];
@@ -98,6 +98,9 @@ async function testHttpModule(httpPid) {
     httpLatencies.push(endReadTime - startReadTime);
 
     messageCount++;
+    if (messageCount % 1000 === 0) {
+      console.log(`Message count: ${messageCount}, date: ${new Date()}`);
+    }
 
     if (messageCount >= NUM_MESSAGES) {
       clearInterval(messageInterval);
@@ -116,7 +119,9 @@ async function testHttpModule(httpPid) {
   }, MESSAGE_INTERVAL);
 
   // Wait for test to complete
-  return new Promise((resolve) => setTimeout(resolve, TEST_DURATION + 5000));
+  return new Promise((resolve) =>
+    setTimeout(resolve, TEST_DURATION + MESSAGE_INTERVAL)
+  );
 }
 
 // Test the Modbus module
@@ -167,7 +172,9 @@ async function testModbusModule(modbusPid) {
   }, MESSAGE_INTERVAL);
 
   // Wait for test to complete
-  return new Promise((resolve) => setTimeout(resolve, TEST_DURATION + 5000));
+  return new Promise((resolve) =>
+    setTimeout(resolve, TEST_DURATION + MESSAGE_INTERVAL)
+  );
 }
 
 // Calculate statistics for each metric
