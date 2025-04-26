@@ -158,10 +158,6 @@ const initialize = async () => {
         }
 
         await Promise.allSettled(requests).then((results) => {
-          const successCount = results.filter(
-            (r) => r.status === "fulfilled"
-          ).length;
-
           const failedCount = results.filter(
             (r) => r.status === "rejected"
           ).length;

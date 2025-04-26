@@ -401,12 +401,7 @@ async function testHttpModuleWithDevices(httpPid, deviceCount) {
             client.publish(
               `PDVSA_SEDE1_http/string${deviceIndex + 1}`,
               JSON.stringify({
-                humedad: Math.random(),
-                presion: Math.random() * 1000,
-                temp: Math.random() * 100,
-                timestamp: Date.now(),
-                deviceId: deviceIndex + 1,
-                messageId: deviceMessageCount + i + 1
+                humedad: Math.random()
               }),
               { qos: QOS_LEVEL },
               () => {
