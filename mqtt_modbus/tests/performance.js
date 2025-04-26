@@ -20,10 +20,12 @@ const config = require("./config.json");
 
 // Test configuration
 const TEST_DURATION = 120000; // 2 minute in ms
-const MESSAGE_INTERVAL = 5; // ms between messages
-const NUM_MESSAGES = Math.floor(TEST_DURATION / MESSAGE_INTERVAL);
 const SAMPLE_INTERVAL = 1000; // 1 second sampling interval for CPU/mem
 const TEST_MODULES = ["http", "modbus"];
+const PARALLEL_CLIENTS = 5; // Number of parallel MQTT clients to use
+const BATCH_SIZE = 50; // Number of messages to send in a batch
+const THROTTLE_DELAY = 10; // ms to wait between batches
+const QOS_LEVEL = 1; // QoS level for MQTT messages
 
 // Results storage
 const results = {
@@ -49,10 +51,6 @@ const mqttCredentials = {
   username: process.env.MQTT_USER || config.mqttUser
 };
 console.log("🚀 ~ mqttCredentials:", mqttCredentials);
-// Connect to MQTT broker
-const client = mqtt.connect(mqttConnection, mqttCredentials);
-
-let httpLatencies = [];
 
 // Performance monitoring function
 async function monitorPerformance(pid, moduleType) {
@@ -67,118 +65,217 @@ async function monitorPerformance(pid, moduleType) {
   }
 }
 
+// Connect multiple MQTT clients
+async function connectMqttClients(count, moduleType) {
+  const clients = [];
+  for (let i = 0; i < count; i++) {
+    const clientId = `perf-test-${moduleType}-client-${i}-${Date.now()}`;
+    const client = mqtt.connect(mqttConnection, {
+      ...mqttCredentials,
+      clientId
+    });
+    await new Promise((resolve, reject) => {
+      client.on("connect", resolve);
+      client.on("error", reject);
+    });
+    clients.push(client);
+  }
+  return clients;
+}
+
 // Test the HTTP module
 async function testHttpModule(httpPid) {
   console.log("Starting HTTP module performance test...");
+  let messageCount = 0;
+  const httpLatencies = [];
+  const startTime = performance.now();
 
   // Start performance monitoring
   const monitoringInterval = setInterval(async () => {
     await monitorPerformance(httpPid, "http");
   }, SAMPLE_INTERVAL);
 
-  let messageCount = 0;
-  let startTime = performance.now();
+  try {
+    // Connect multiple clients
+    const clients = await connectMqttClients(PARALLEL_CLIENTS, "http");
 
-  // Send test messages
-  const messageInterval = setInterval(() => {
-    const startReadTime = performance.now();
-    try {
-      client.publish(
-        `PDVSA_SEDE1_http/string1`,
-        JSON.stringify({
-          temp: 18,
-          presion: 2.5,
-          humedad: 0.8
-        })
-      );
-    } catch (error) {
-      console.error("Error publishing message HTTP:", error);
-    }
-    const endReadTime = performance.now();
-    httpLatencies.push(endReadTime - startReadTime);
+    // Calculate how many total messages each client should send
+    const testEndTime = startTime + TEST_DURATION;
 
-    messageCount++;
-    if (messageCount % 1000 === 0) {
-      console.log(`Message count: ${messageCount} HTTP, date: ${new Date()}`);
-    }
+    // Run parallel publishing
+    const clientPromises = clients.map(async (client, clientIndex) => {
+      let clientMsgCount = 0;
 
-    if (messageCount >= NUM_MESSAGES) {
-      clearInterval(messageInterval);
-      // Calculate throughput samples
-      const endTime = performance.now();
-      results.http.throughput.push(
-        messageCount / ((endTime - startTime) / 1000)
-      );
+      while (performance.now() < testEndTime) {
+        // Send a batch of messages
+        const batchPromises = [];
+        for (let i = 0; i < BATCH_SIZE; i++) {
+          const startReadTime = performance.now();
+          try {
+            const promise = new Promise((resolve) => {
+              client.publish(
+                `PDVSA_SEDE1_http/string${clientIndex + 1}`,
+                JSON.stringify({
+                  temp: 18 + Math.random() * 10,
+                  presion: 2.5 + Math.random(),
+                  humedad: 0.8 * Math.random(),
+                  timestamp: Date.now()
+                }),
+                { qos: QOS_LEVEL },
+                () => {
+                  const endReadTime = performance.now();
+                  httpLatencies.push(endReadTime - startReadTime);
+                  resolve();
+                }
+              );
+            });
+            batchPromises.push(promise);
+            clientMsgCount++;
+          } catch (error) {
+            console.error(
+              `Client ${clientIndex} error publishing message:`,
+              error
+            );
+          }
+        }
 
-      // Save the latency results
-      results.http.latencies = httpLatencies;
+        // Wait for all messages in batch to be published
+        await Promise.all(batchPromises);
 
-      clearInterval(monitoringInterval);
-      console.log("HTTP module performance test completed.");
-    }
-  }, MESSAGE_INTERVAL);
+        // Add throttling between batches
+        await new Promise((resolve) => setTimeout(resolve, THROTTLE_DELAY));
 
-  // Wait for test to complete
-  return new Promise((resolve) =>
-    setTimeout(resolve, TEST_DURATION + MESSAGE_INTERVAL)
-  );
+        // Log progress occasionally
+        if (clientMsgCount % 1000 === 0) {
+          console.log(
+            `Client ${clientIndex}: ${clientMsgCount} HTTP messages sent`
+          );
+        }
+      }
+
+      return clientMsgCount;
+    });
+
+    // Wait for all clients to finish
+    const clientCounts = await Promise.all(clientPromises);
+    messageCount = clientCounts.reduce((a, b) => a + b, 0);
+
+    // Calculate throughput
+    const endTime = performance.now();
+    const duration = (endTime - startTime) / 1000; // in seconds
+    results.http.throughput.push(messageCount / duration);
+
+    // Save latency results
+    results.http.latencies = httpLatencies;
+
+    // Clean up clients
+    clients.forEach((client) => client.end());
+  } catch (error) {
+    console.error("Error in HTTP test:", error);
+  } finally {
+    clearInterval(monitoringInterval);
+    console.log(
+      `HTTP module test completed with ${messageCount} messages sent.`
+    );
+  }
 }
 
 // Test the Modbus module
 async function testModbusModule(modbusPid) {
   console.log("Starting Modbus module performance test...");
+  let messageCount = 0;
+  const modbusLatencies = [];
+  const startTime = performance.now();
+
+  // Find the first sede in config
+  const firstSede = config.modbusSedes[0];
 
   // Start performance monitoring
   const monitoringInterval = setInterval(async () => {
     await monitorPerformance(modbusPid, "modbus");
   }, SAMPLE_INTERVAL);
 
-  let messageCount = 0;
-  let startTime = performance.now();
-  const modbusLatencies = [];
+  try {
+    // Connect multiple clients
+    const clients = await connectMqttClients(PARALLEL_CLIENTS, "modbus");
 
-  // Find the first sede in config
-  const firstSede = config.modbusSedes[0];
+    // Calculate end time
+    const testEndTime = startTime + TEST_DURATION;
 
-  const messageInterval = setInterval(() => {
-    const startReadTime = performance.now();
-    try {
-      client.publish(
-        `${firstSede.nombre}/1/string/8`,
-        "Probando PERFORMANCE, en HTTP y MODBUS                                              "
-      );
-    } catch (error) {
-      console.error("Error publishing message Modbus:", error);
-    }
-    const endReadTime = performance.now();
-    modbusLatencies.push(endReadTime - startReadTime);
+    // Run parallel publishing
+    const clientPromises = clients.map(async (client, clientIndex) => {
+      let clientMsgCount = 0;
 
-    messageCount++;
+      while (performance.now() < testEndTime) {
+        // Send a batch of messages
+        const batchPromises = [];
+        for (let i = 0; i < BATCH_SIZE; i++) {
+          const startReadTime = performance.now();
+          try {
+            // Generate a value within Modbus register range (-32768 to 32767)
+            const value = Math.floor(Math.random() * 65535) - 32768;
 
-    if (messageCount % 1000 === 0) {
-      console.log(`Message count: ${messageCount} MODBUS, date: ${new Date()}`);
-    }
+            const promise = new Promise((resolve) => {
+              client.publish(
+                `${firstSede.nombre}/${clientIndex + 1}/holding/${i % 100}`,
+                String(value),
+                { qos: QOS_LEVEL },
+                () => {
+                  const endReadTime = performance.now();
+                  modbusLatencies.push(endReadTime - startReadTime);
+                  resolve();
+                }
+              );
+            });
+            batchPromises.push(promise);
+            clientMsgCount++;
+          } catch (error) {
+            console.error(
+              `Client ${clientIndex} error publishing message:`,
+              error
+            );
+          }
+        }
 
-    if (messageCount >= NUM_MESSAGES) {
-      clearInterval(messageInterval);
-      // Calculate throughput samples
-      const endTime = performance.now();
-      results.modbus.throughput.push(
-        messageCount / ((endTime - startTime) / 1000)
-      );
+        // Wait for all messages in batch to be published
+        await Promise.all(batchPromises);
 
-      // Save the latency results
-      results.modbus.latencies = modbusLatencies;
+        // Add throttling between batches
+        await new Promise((resolve) => setTimeout(resolve, THROTTLE_DELAY));
 
-      clearInterval(monitoringInterval);
-      console.log("Modbus module performance test completed.");
-    }
-  }, MESSAGE_INTERVAL);
+        // Log progress occasionally
+        if (clientMsgCount % 1000 === 0) {
+          console.log(
+            `Client ${clientIndex}: ${clientMsgCount} MODBUS messages sent`
+          );
+        }
+      }
 
-  // Wait for test to complete
-  return new Promise((resolve) =>
-    setTimeout(resolve, TEST_DURATION + MESSAGE_INTERVAL)
-  );
+      return clientMsgCount;
+    });
+
+    // Wait for all clients to finish
+    const clientCounts = await Promise.all(clientPromises);
+    messageCount = clientCounts.reduce((a, b) => a + b, 0);
+
+    // Calculate throughput
+    const endTime = performance.now();
+    const duration = (endTime - startTime) / 1000; // in seconds
+    results.modbus.throughput.push(messageCount / duration);
+
+    // Save latency results
+    results.modbus.latencies = modbusLatencies;
+
+    // Clean up clients
+    clients.forEach((client) => client.end());
+  } catch (error) {
+    console.error("Error in MODBUS test:", error);
+  } finally {
+    clearInterval(monitoringInterval);
+    console.log(
+      `MODBUS module test completed with ${messageCount} messages sent.`
+    );
+  }
 }
 
 // Calculate statistics for each metric
@@ -290,14 +387,17 @@ async function runPerformanceTests(httpPid, modbusPid) {
   // Run HTTP module test
   await testHttpModule(httpPid);
 
+  // Wait a bit to let system stabilize
+  await new Promise((resolve) => setTimeout(resolve, 30000));
+
   // Run Modbus module test
   await testModbusModule(modbusPid);
 
-  // Generate report
+  // Wait for any pending messages to be processed
   await new Promise((resolve) => setTimeout(resolve, 60000));
-  generateReport();
 
-  client.end();
+  // Generate report
+  generateReport();
 
   console.log("Performance tests completed.");
 }

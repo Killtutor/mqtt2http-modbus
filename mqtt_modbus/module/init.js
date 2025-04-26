@@ -12,7 +12,13 @@ procesos.performance = fork(
   [procesos.httpServer.pid, procesos.modbusSlave.pid],
   { silent: false }
 );
-// procesos.scalability = fork(
+// procesos.scalabilityDevice = fork(
+//   "../tests/scalability.js",
+//   [procesos.httpServer.pid, procesos.modbusSlave.pid],
+//   { silent: false }
+// );
+
+// procesos.scalabilityMessages = fork(
 //   "../tests/message_count.js",
 //   [procesos.httpServer.pid, procesos.modbusSlave.pid],
 //   { silent: false }
