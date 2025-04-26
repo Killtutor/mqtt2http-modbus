@@ -22,12 +22,12 @@ const config = require("./config.json");
 const TEST_DURATION = 60000; // 1 minute in ms
 const SAMPLE_INTERVAL = 1000; // 1 second sampling interval for CPU/mem
 const TEST_MODULES = ["http", "modbus"];
-const PARALLEL_CLIENTS = 3; // Number of parallel MQTT clients to use
-const BATCH_SIZE = 10; // Reduced batch size from 50 to 10
+const PARALLEL_CLIENTS = 4; // Number of parallel MQTT clients to use
+const BATCH_SIZE = 30; // Reduced batch size from 50 to 10
 const THROTTLE_DELAY = 250; // Increased delay from 10ms to 250ms between batches
 const QOS_LEVEL = 1; // QoS level for MQTT messages
 const MESSAGE_VERIFICATION_TIMEOUT = 30000; // 30 seconds timeout for message processing verification
-const MAX_MESSAGES_PER_SECOND = 250; // Rate limit - maximum messages per second
+const MAX_MESSAGES_PER_SECOND = 500; // Rate limit - maximum messages per second
 const PROCESSING_CHECK_INTERVAL = 2500; // Check processing progress every 2.5 seconds
 
 // Topics for stats
