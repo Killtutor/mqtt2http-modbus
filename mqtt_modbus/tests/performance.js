@@ -22,7 +22,7 @@ const config = require("./config.json");
 const TEST_DURATION = 60000; // 1 minute in ms
 const SAMPLE_INTERVAL = 1000; // 1 second sampling interval for CPU/mem
 const TEST_MODULES = ["http", "modbus"];
-const PARALLEL_CLIENTS = 2; // Number of parallel MQTT clients to use
+const PARALLEL_CLIENTS = 3; // Number of parallel MQTT clients to use
 const BATCH_SIZE = 30; // Reduced batch size from 50 to 10
 const THROTTLE_DELAY = 250; // Increased delay from 10ms to 250ms between batches
 const QOS_LEVEL = 1; // QoS level for MQTT messages
@@ -44,13 +44,15 @@ const results = {
     latencies: [],
     throughput: [],
     cpuUsage: [],
-    memoryUsage: []
+    memoryUsage: [],
+    throughputSamples: [] // Array to store periodic throughput samples
   },
   modbus: {
     latencies: [],
     throughput: [],
     cpuUsage: [],
-    memoryUsage: []
+    memoryUsage: [],
+    throughputSamples: [] // Array to store periodic throughput samples
   }
 };
 const mqttConnection = `mqtt://${process.env.MQTT_HOST || config.mqttHost}:${
@@ -290,6 +292,38 @@ async function waitForMessageProcessing(totalSent, isHttp) {
   return processed;
 }
 
+// Collect throughput sample
+async function collectThroughputSample(
+  moduleType,
+  isHttp,
+  startTime,
+  lastMessageCount
+) {
+  const currentTime = performance.now();
+  const elapsedSeconds = (currentTime - startTime) / 1000;
+
+  // Get current processed message count
+  const currentProcessed = await getProcessedMessageCount(isHttp);
+
+  // Calculate throughput for this sample period
+  const messageDelta = currentProcessed - lastMessageCount;
+  const sampleDuration = 5; // Sample over approximately 5 seconds
+  const throughput = messageDelta / sampleDuration;
+
+  if (messageDelta > 0) {
+    console.log(
+      `[${elapsedSeconds.toFixed(
+        1
+      )}s] Current throughput sample: ${throughput.toFixed(
+        2
+      )} msgs/s (${messageDelta} messages in ~${sampleDuration}s)`
+    );
+    results[moduleType].throughputSamples.push(throughput);
+  }
+
+  return currentProcessed;
+}
+
 // Test the HTTP module
 async function testHttpModule(httpPid) {
   console.log("Starting HTTP module performance test...");
@@ -300,10 +334,24 @@ async function testHttpModule(httpPid) {
   let messageCount = 0;
   const httpLatencies = [];
   const startTime = performance.now();
+  let lastSampleTime = startTime;
+  let lastSampleCount = 0;
 
   // Start performance monitoring
   const monitoringInterval = setInterval(async () => {
     await monitorPerformance(httpPid, "http");
+
+    // Collect throughput sample every 5 seconds
+    const currentTime = performance.now();
+    if (currentTime - lastSampleTime >= 5000) {
+      lastSampleCount = await collectThroughputSample(
+        "http",
+        true,
+        startTime,
+        lastSampleCount
+      );
+      lastSampleTime = currentTime;
+    }
   }, SAMPLE_INTERVAL);
 
   try {
@@ -412,11 +460,21 @@ async function testHttpModule(httpPid) {
     // Wait for all messages to be processed
     const processedCount = await waitForMessageProcessing(messageCount, true);
 
-    // Calculate throughput based on actually processed messages
+    // Calculate overall throughput based on actually processed messages
     const endTime = performance.now();
     const duration = (endTime - startTime) / 1000; // in seconds
     const actualThroughput = processedCount / duration;
-    results.http.throughput.push(actualThroughput);
+
+    // Add the final throughput calculation to samples if we have any samples
+    if (results.http.throughputSamples.length > 0) {
+      results.http.throughputSamples.push(actualThroughput);
+
+      // Use samples for throughput stats
+      results.http.throughput = results.http.throughputSamples;
+    } else {
+      // Fallback if no samples were collected
+      results.http.throughput.push(actualThroughput);
+    }
 
     console.log(
       `HTTP throughput: ${actualThroughput.toFixed(
@@ -449,6 +507,8 @@ async function testModbusModule(modbusPid) {
   let messageCount = 0;
   const modbusLatencies = [];
   const startTime = performance.now();
+  let lastSampleTime = startTime;
+  let lastSampleCount = 0;
 
   // Find the first sede in config
   const firstSede = config.modbusSedes[0];
@@ -456,6 +516,18 @@ async function testModbusModule(modbusPid) {
   // Start performance monitoring
   const monitoringInterval = setInterval(async () => {
     await monitorPerformance(modbusPid, "modbus");
+
+    // Collect throughput sample every 5 seconds
+    const currentTime = performance.now();
+    if (currentTime - lastSampleTime >= 5000) {
+      lastSampleCount = await collectThroughputSample(
+        "modbus",
+        false,
+        startTime,
+        lastSampleCount
+      );
+      lastSampleTime = currentTime;
+    }
   }, SAMPLE_INTERVAL);
 
   try {
@@ -562,11 +634,21 @@ async function testModbusModule(modbusPid) {
     // Wait for all messages to be processed
     const processedCount = await waitForMessageProcessing(messageCount, false);
 
-    // Calculate throughput based on actually processed messages
+    // Calculate overall throughput based on actually processed messages
     const endTime = performance.now();
     const duration = (endTime - startTime) / 1000; // in seconds
     const actualThroughput = processedCount / duration;
-    results.modbus.throughput.push(actualThroughput);
+
+    // Add the final throughput calculation to samples if we have any samples
+    if (results.modbus.throughputSamples.length > 0) {
+      results.modbus.throughputSamples.push(actualThroughput);
+
+      // Use samples for throughput stats
+      results.modbus.throughput = results.modbus.throughputSamples;
+    } else {
+      // Fallback if no samples were collected
+      results.modbus.throughput.push(actualThroughput);
+    }
 
     console.log(
       `MODBUS throughput: ${actualThroughput.toFixed(
