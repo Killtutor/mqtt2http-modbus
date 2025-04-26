@@ -168,11 +168,6 @@ const initialize = async () => {
 
         processedMessages++;
       } catch (error) {
-        // Not a valid JSON, treat as single parameter
-        if (!(error instanceof SyntaxError)) {
-          console.error("Error processing message:", error.message);
-        }
-
         const toSend = `http://tomcat:8080/httpds?&${parametro}=${encodeURI(
           correctedMessage
         )}&__device=${sede}&__time=${timestamp}`;
