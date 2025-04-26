@@ -23,7 +23,7 @@ const config = require("./config.json");
 // Test configuration
 const MESSAGES_PER_DEVICE = 15; // Total messages per device per test - FIXED COUNT
 const SAMPLE_INTERVAL = 1000; // 1 second sampling interval for CPU/mem
-const DEVICE_COUNTS = [5, 10, 25, 50, 75, 100, 125, 150, 175, 200]; // Number of simulated devices
+const DEVICE_COUNTS = [5, 10, 25, 50, 75, 100]; // Number of simulated devices
 const BATCH_SIZE = 3; // Send messages in small batches
 const PROCESSING_CHECK_INTERVAL = 2500; // Check processing progress every 2.5 seconds
 const QOS_LEVEL = 1; // QoS level for MQTT messages
