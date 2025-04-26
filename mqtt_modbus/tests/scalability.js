@@ -21,15 +21,16 @@ const pidusage = require("pidusage");
 const config = require("./config.json");
 
 // Test configuration
-const TEST_DURATION = 60000; // 2 minutes per device count test
-const MESSAGE_RATE = 15; // Messages per second per device - FIXED RATE
+const TEST_DURATION = 60000; // 1 minute per device count test
+const MESSAGES_PER_DEVICE = 15; // Total messages per device per test - FIXED COUNT
 const SAMPLE_INTERVAL = 1000; // 1 second sampling interval for CPU/mem
 const DEVICE_COUNTS = [5, 20, 50, 100]; // Number of simulated devices
 const THROTTLE_DELAY = 200; // Delay between message batches
-const BATCH_SIZE = 5; // Send messages in small batches
+const BATCH_SIZE = 3; // Send messages in small batches
 const PROCESSING_CHECK_INTERVAL = 2500; // Check processing progress every 2.5 seconds
 const QOS_LEVEL = 1; // QoS level for MQTT messages
 const MESSAGE_VERIFICATION_TIMEOUT = 30000; // 30 seconds timeout for message processing verification
+const TEST_MODULES = ["http", "modbus"];
 
 // Topics for stats
 const HTTP_STATS_REQUEST_TOPIC = "http_module/stats/request";
@@ -38,7 +39,6 @@ const HTTP_STATS_RESET_TOPIC = "http_module/stats/reset";
 const MODBUS_STATS_REQUEST_TOPIC = "modbus_module/stats/request";
 const MODBUS_STATS_RESPONSE_TOPIC = "modbus_module/stats/response";
 const MODBUS_STATS_RESET_TOPIC = "modbus_module/stats/reset";
-const TEST_MODULES = ["http", "modbus"];
 
 // Results storage
 const results = {
@@ -357,50 +357,28 @@ async function testHttpModuleWithDevices(httpPid, deviceCount) {
     }
   }, SAMPLE_INTERVAL);
 
-  // Calculate messages per device to maintain fixed rate
-  const totalTestDuration = TEST_DURATION / 1000; // in seconds
-  const messagesPerDevice = Math.floor(totalTestDuration * MESSAGE_RATE);
+  // Fixed number of messages per device
+  const messagesPerDevice = MESSAGES_PER_DEVICE;
+
+  // Calculate delay between messages to spread them across the test duration
+  const messageDelay = Math.floor(TEST_DURATION / messagesPerDevice);
+
   console.log(
-    `Each device will send ${messagesPerDevice} messages at a rate of ${MESSAGE_RATE} msgs/s`
+    `Each device will send ${messagesPerDevice} messages total, with ~${messageDelay}ms between messages`
   );
 
   // Send messages from each device
   const devicePromises = clients.map((client, deviceIndex) => {
     return new Promise(async (resolve) => {
       let deviceMessageCount = 0;
-      let lastBatchTime = performance.now();
 
-      while (deviceMessageCount < messagesPerDevice) {
-        // Check for backlog every 50 messages
-        if (deviceMessageCount > 0 && deviceMessageCount % 50 === 0) {
-          const processed = await getProcessedMessageCount(true);
-          const backlog = messageCount - processed;
-
-          // If backlog is too large, wait for system to catch up
-          if (backlog > deviceCount * 10) {
-            console.log(
-              `Backlog detected (${backlog} messages). Pausing to let system catch up.`
-            );
-            await new Promise((resolve) =>
-              setTimeout(resolve, Math.min(backlog * 5, 3000))
-            );
-            lastBatchTime = performance.now(); // Reset timing after pause
-            continue;
-          }
+      // Function to send a batch of messages
+      const sendBatch = async () => {
+        if (deviceMessageCount >= messagesPerDevice) {
+          return;
         }
 
-        // Enforce rate limiting - calculate time needed for a batch at desired rate
-        const currentTime = performance.now();
-        const timeSinceLastBatch = currentTime - lastBatchTime;
-        const minTimePerBatch = (BATCH_SIZE * 1000) / MESSAGE_RATE;
-
-        if (timeSinceLastBatch < minTimePerBatch) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, minTimePerBatch - timeSinceLastBatch)
-          );
-        }
-
-        // Send a batch of messages
+        // Determine batch size (don't exceed remaining messages)
         const batchSize = Math.min(
           BATCH_SIZE,
           messagesPerDevice - deviceMessageCount
@@ -418,7 +396,8 @@ async function testHttpModuleWithDevices(httpPid, deviceCount) {
                 presion: Math.random() * 1000,
                 temp: Math.random() * 100,
                 timestamp: Date.now(),
-                deviceId: deviceIndex + 1
+                deviceId: deviceIndex + 1,
+                messageId: deviceMessageCount + i + 1
               }),
               { qos: QOS_LEVEL },
               () => {
@@ -430,26 +409,29 @@ async function testHttpModuleWithDevices(httpPid, deviceCount) {
           });
 
           batchPromises.push(promise);
-          deviceMessageCount++;
-          messageCount++;
         }
 
         // Wait for all messages in batch to be published
         await Promise.all(batchPromises);
 
-        // Record the time after sending this batch
-        lastBatchTime = performance.now();
+        deviceMessageCount += batchSize;
+        messageCount += batchSize;
 
-        // Add throttling between batches
-        await new Promise((resolve) => setTimeout(resolve, THROTTLE_DELAY));
-      }
+        // If we still have messages to send, schedule the next batch
+        if (deviceMessageCount < messagesPerDevice) {
+          setTimeout(sendBatch, messageDelay);
+        } else {
+          console.log(
+            `Device ${
+              deviceIndex + 1
+            } completed sending ${deviceMessageCount} messages`
+          );
+          resolve(deviceMessageCount);
+        }
+      };
 
-      console.log(
-        `Device ${
-          deviceIndex + 1
-        } completed sending ${deviceMessageCount} messages`
-      );
-      resolve(deviceMessageCount);
+      // Start sending messages
+      sendBatch();
     });
   });
 
@@ -563,50 +545,28 @@ async function testModbusModuleWithDevices(modbusPid, deviceCount) {
     }
   }, SAMPLE_INTERVAL);
 
-  // Calculate messages per device to maintain fixed rate
-  const totalTestDuration = TEST_DURATION / 1000; // in seconds
-  const messagesPerDevice = Math.floor(totalTestDuration * MESSAGE_RATE);
+  // Fixed number of messages per device
+  const messagesPerDevice = MESSAGES_PER_DEVICE;
+
+  // Calculate delay between messages to spread them across the test duration
+  const messageDelay = Math.floor(TEST_DURATION / messagesPerDevice);
+
   console.log(
-    `Each device will send ${messagesPerDevice} messages at a rate of ${MESSAGE_RATE} msgs/s`
+    `Each device will send ${messagesPerDevice} messages total, with ~${messageDelay}ms between messages`
   );
 
   // Send messages from each device
   const devicePromises = clients.map((client, deviceIndex) => {
     return new Promise(async (resolve) => {
       let deviceMessageCount = 0;
-      let lastBatchTime = performance.now();
 
-      while (deviceMessageCount < messagesPerDevice) {
-        // Check for backlog every 50 messages
-        if (deviceMessageCount > 0 && deviceMessageCount % 50 === 0) {
-          const processed = await getProcessedMessageCount(false);
-          const backlog = messageCount - processed;
-
-          // If backlog is too large, wait for system to catch up
-          if (backlog > deviceCount * 10) {
-            console.log(
-              `Backlog detected (${backlog} messages). Pausing to let system catch up.`
-            );
-            await new Promise((resolve) =>
-              setTimeout(resolve, Math.min(backlog * 5, 3000))
-            );
-            lastBatchTime = performance.now(); // Reset timing after pause
-            continue;
-          }
+      // Function to send a batch of messages
+      const sendBatch = async () => {
+        if (deviceMessageCount >= messagesPerDevice) {
+          return;
         }
 
-        // Enforce rate limiting - calculate time needed for a batch at desired rate
-        const currentTime = performance.now();
-        const timeSinceLastBatch = currentTime - lastBatchTime;
-        const minTimePerBatch = (BATCH_SIZE * 1000) / MESSAGE_RATE;
-
-        if (timeSinceLastBatch < minTimePerBatch) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, minTimePerBatch - timeSinceLastBatch)
-          );
-        }
-
-        // Send a batch of messages
+        // Determine batch size (don't exceed remaining messages)
         const batchSize = Math.min(
           BATCH_SIZE,
           messagesPerDevice - deviceMessageCount
@@ -633,26 +593,29 @@ async function testModbusModuleWithDevices(modbusPid, deviceCount) {
           });
 
           batchPromises.push(promise);
-          deviceMessageCount++;
-          messageCount++;
         }
 
         // Wait for all messages in batch to be published
         await Promise.all(batchPromises);
 
-        // Record the time after sending this batch
-        lastBatchTime = performance.now();
+        deviceMessageCount += batchSize;
+        messageCount += batchSize;
 
-        // Add throttling between batches
-        await new Promise((resolve) => setTimeout(resolve, THROTTLE_DELAY));
-      }
+        // If we still have messages to send, schedule the next batch
+        if (deviceMessageCount < messagesPerDevice) {
+          setTimeout(sendBatch, messageDelay);
+        } else {
+          console.log(
+            `Device ${
+              deviceIndex + 1
+            } completed sending ${deviceMessageCount} messages`
+          );
+          resolve(deviceMessageCount);
+        }
+      };
 
-      console.log(
-        `Device ${
-          deviceIndex + 1
-        } completed sending ${deviceMessageCount} messages`
-      );
-      resolve(deviceMessageCount);
+      // Start sending messages
+      sendBatch();
     });
   });
 
