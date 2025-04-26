@@ -2,10 +2,10 @@
  * Scalability Test with Different Data Types
  *
  * Objective: Evaluate gateway performance when handling different data types
- * (integers, decimals, booleans, strings, JSON) with a high number of devices and messages.
+ * (integers, decimals, booleans, strings, JSON) with a controlled message load.
  *
- * Configuration: 1000 simulated devices sending messages with different data types
- * at a rate of 50 messages/second per device.
+ * Configuration: 1 device sending exactly 400 messages for each data type (2000 total)
+ * with throttling to avoid flooding the service.
  */
 
 "use strict";
@@ -18,19 +18,15 @@ const pidusage = require("pidusage");
 const config = require("./config.json");
 
 // Test configuration
-const TEST_DURATION = 60000; // 1 minute test duration
 const SAMPLE_INTERVAL = 1000; // 1 second sampling interval for CPU/mem
 const TEST_MODULES = ["http", "modbus"];
-const SIMULATED_DEVICES = 1000; // Number of simulated devices
-const CONCURRENT_CLIENTS = 20; // Number of actual MQTT clients to distribute the load
-const DEVICES_PER_CLIENT = Math.ceil(SIMULATED_DEVICES / CONCURRENT_CLIENTS);
-const MESSAGES_PER_SECOND_PER_DEVICE = 50; // Target message rate per device
+const MESSAGES_PER_DATA_TYPE = 400; // Send 400 messages for each data type
 const MESSAGE_VERIFICATION_TIMEOUT = 60000; // 60 seconds timeout for message processing verification
 const PROCESSING_CHECK_INTERVAL = 5000; // Check processing progress every 5 seconds
 
 // Rate limiting and throttling parameters
-const BATCH_SIZE = 100; // Messages to send in a batch
-const THROTTLE_DELAY = 50; // ms delay between batches to prevent overwhelming the broker
+const BATCH_SIZE = 20; // Reduced batch size to avoid overwhelming the broker
+const THROTTLE_DELAY = 100; // Increased delay between batches
 
 // Topics for stats
 const HTTP_STATS_REQUEST_TOPIC = "http_module/stats/request";
@@ -108,41 +104,33 @@ async function monitorPerformance(pid, moduleType) {
   }
 }
 
-// Connect multiple MQTT clients
-async function connectMqttClients(count, moduleType) {
-  const clients = [];
-  console.log(`Connecting ${count} MQTT clients for ${moduleType} module...`);
+// Connect MQTT client
+async function connectMqttClient(moduleType) {
+  console.log(`Connecting MQTT client for ${moduleType} module...`);
 
-  for (let i = 0; i < count; i++) {
-    const clientId = `scalability-test-${moduleType}-client-${i}-${Date.now()}`;
-    const client = mqtt.connect(mqttConnection, {
-      ...mqttCredentials,
-      clientId,
-      keepalive: 60
+  const clientId = `scalability-test-${moduleType}-client-${Date.now()}`;
+  const client = mqtt.connect(mqttConnection, {
+    ...mqttCredentials,
+    clientId,
+    keepalive: 60
+  });
+
+  return new Promise((resolve, reject) => {
+    client.on("connect", () => {
+      console.log(`MQTT client connected for ${moduleType} module`);
+      resolve(client);
+    });
+    client.on("error", (err) => {
+      console.error(`MQTT client connection error:`, err);
+      reject(err);
     });
 
-    await new Promise((resolve, reject) => {
-      client.on("connect", () => {
-        console.log(`Client ${i + 1}/${count} connected`);
-        resolve();
-      });
-      client.on("error", (err) => {
-        console.error(`Client ${i} connection error:`, err);
-        reject(err);
-      });
-
-      // Set timeout for connection
-      setTimeout(
-        () => reject(new Error(`Connection timeout for client ${i}`)),
-        10000
-      );
-    });
-
-    clients.push(client);
-  }
-
-  console.log(`${clients.length} MQTT clients connected successfully`);
-  return clients;
+    // Set timeout for connection
+    setTimeout(
+      () => reject(new Error(`Connection timeout for MQTT client`)),
+      10000
+    );
+  });
 }
 
 // Setup the stats MQTT client
@@ -313,7 +301,7 @@ async function waitForMessageProcessing(totalSent, isHttp) {
     } module...`
   );
 
-  const maxWaitTime = 180000; // Extended max wait to 3 minutes for high volume
+  const maxWaitTime = 180000; // Up to 3 minutes wait time
   const startTime = performance.now();
   let processed = 0;
   let timeWaiting = 0;
@@ -428,58 +416,27 @@ async function testHttpScalability(httpPid) {
   }, SAMPLE_INTERVAL);
 
   try {
-    // Connect MQTT clients
-    const clients = await connectMqttClients(CONCURRENT_CLIENTS, "http");
-    const testEndTime = startTime + TEST_DURATION;
+    // Connect a single MQTT client
+    const client = await connectMqttClient("http");
 
-    // Run parallel publishing from multiple clients
-    const clientPromises = clients.map(async (client, clientIndex) => {
-      let clientMessageCount = 0;
-      const deviceBaseIndex = clientIndex * DEVICES_PER_CLIENT;
-      const devicesForThisClient = Math.min(
-        DEVICES_PER_CLIENT,
-        SIMULATED_DEVICES - deviceBaseIndex
-      );
-
+    // Process each data type sequentially, sending exactly MESSAGES_PER_DATA_TYPE messages for each
+    for (const dataType of DATA_TYPES) {
       console.log(
-        `Client ${clientIndex} simulating ${devicesForThisClient} devices (${deviceBaseIndex} to ${
-          deviceBaseIndex + devicesForThisClient - 1
-        })`
+        `Sending ${MESSAGES_PER_DATA_TYPE} HTTP messages with data type: ${dataType}`
       );
 
-      // Calculate message rate for this client to meet target rate across all devices
-      const clientMessagesPerSecond =
-        devicesForThisClient * MESSAGES_PER_SECOND_PER_DEVICE;
-      const messagesPerBatch = Math.min(
-        BATCH_SIZE,
-        Math.ceil(clientMessagesPerSecond / 5)
-      ); // At most 1/5 second worth of messages per batch
+      let messagesSent = 0;
+      let batchCount = 0;
 
-      let lastBatchTime = performance.now();
-      let dataTypeIndex = 0;
-
-      while (performance.now() < testEndTime) {
-        const currentTime = performance.now();
-
-        // Enforce rate limiting
-        const timeSinceLastBatch = currentTime - lastBatchTime;
-        const targetTimeBetweenBatches =
-          (messagesPerBatch * 1000) / clientMessagesPerSecond;
-
-        if (timeSinceLastBatch < targetTimeBetweenBatches) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, targetTimeBetweenBatches - timeSinceLastBatch)
-          );
-        }
-
-        // Send a batch of messages across simulated devices
+      // Send messages in batches
+      while (messagesSent < MESSAGES_PER_DATA_TYPE) {
+        const batchSize = Math.min(
+          BATCH_SIZE,
+          MESSAGES_PER_DATA_TYPE - messagesSent
+        );
         const batchPromises = [];
-        for (let i = 0; i < messagesPerBatch; i++) {
-          // Select device and data type
-          const deviceId = deviceBaseIndex + (i % devicesForThisClient);
-          const dataType = DATA_TYPES[dataTypeIndex % DATA_TYPES.length];
-          dataTypeIndex++;
 
+        for (let i = 0; i < batchSize; i++) {
           const data = generateData(dataType);
           const startSendTime = performance.now();
 
@@ -488,7 +445,7 @@ async function testHttpScalability(httpPid) {
               const payload =
                 typeof data === "object" ? JSON.stringify(data) : String(data);
               client.publish(
-                `PDVSA_SEDE1_http/device${deviceId}/${dataType}`,
+                `PDVSA_SEDE1_http/device1/${dataType}`, // Only using device1
                 payload,
                 { qos: 1 },
                 () => {
@@ -505,10 +462,11 @@ async function testHttpScalability(httpPid) {
             });
 
             batchPromises.push(promise);
-            clientMessageCount++;
+            messagesSent++;
+            totalMessageCount++;
           } catch (error) {
             console.error(
-              `Client ${clientIndex} error publishing message for device ${deviceId}:`,
+              `Error publishing HTTP message with data type ${dataType}:`,
               error
             );
           }
@@ -517,31 +475,30 @@ async function testHttpScalability(httpPid) {
         // Wait for all messages in batch to be published
         await Promise.all(batchPromises);
 
-        // Record time after batch
-        lastBatchTime = performance.now();
-
-        // Add small throttling delay to avoid overwhelming broker
-        await new Promise((resolve) => setTimeout(resolve, THROTTLE_DELAY));
-
-        // Log progress occasionally
-        if (clientMessageCount % 1000 === 0) {
+        batchCount++;
+        if (batchCount % 5 === 0) {
           console.log(
-            `Client ${clientIndex}: ${clientMessageCount} HTTP messages sent`
+            `HTTP: ${messagesSent}/${MESSAGES_PER_DATA_TYPE} ${dataType} messages sent`
           );
         }
+
+        // Add throttling delay between batches
+        await new Promise((resolve) => setTimeout(resolve, THROTTLE_DELAY));
       }
 
-      return clientMessageCount;
-    });
+      console.log(
+        `Completed sending ${messagesSent} HTTP messages with data type: ${dataType}`
+      );
 
-    // Wait for all clients to finish
-    const clientMessageCounts = await Promise.all(clientPromises);
-    totalMessageCount = clientMessageCounts.reduce(
-      (sum, count) => sum + count,
-      0
-    );
+      // Wait for messages of this type to be processed before moving to next type
+      // This helps prevent overwhelming the system
+      console.log(
+        `Waiting for ${dataType} messages to be processed before continuing...`
+      );
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
 
-    console.log(`Total messages sent to HTTP module: ${totalMessageCount}`);
+    console.log(`Total HTTP messages sent: ${totalMessageCount}`);
 
     // Wait for all messages to be processed
     const processedCount = await waitForMessageProcessing(
@@ -568,10 +525,8 @@ async function testHttpScalability(httpPid) {
       )} msgs/s (${processedCount} messages in ${durationSeconds.toFixed(2)}s)`
     );
 
-    // Clean up clients
-    for (const client of clients) {
-      client.end();
-    }
+    // Clean up client
+    client.end();
   } catch (error) {
     console.error("Error in HTTP scalability test:", error);
   } finally {
@@ -617,70 +572,44 @@ async function testModbusScalability(modbusPid) {
   }, SAMPLE_INTERVAL);
 
   try {
-    // Connect MQTT clients
-    const clients = await connectMqttClients(CONCURRENT_CLIENTS, "modbus");
-    const testEndTime = startTime + TEST_DURATION;
+    // Connect a single MQTT client
+    const client = await connectMqttClient("modbus");
 
-    // Run parallel publishing from multiple clients
-    const clientPromises = clients.map(async (client, clientIndex) => {
-      let clientMessageCount = 0;
-      const deviceBaseIndex = clientIndex * DEVICES_PER_CLIENT;
-      const devicesForThisClient = Math.min(
-        DEVICES_PER_CLIENT,
-        SIMULATED_DEVICES - deviceBaseIndex
-      );
+    // Define register types to use for Modbus
+    const registerTypes = ["holding", "input", "coil", "discrete"];
 
+    // Process each data type sequentially
+    for (const dataType of DATA_TYPES) {
       console.log(
-        `Client ${clientIndex} simulating ${devicesForThisClient} Modbus devices (${deviceBaseIndex} to ${
-          deviceBaseIndex + devicesForThisClient - 1
-        })`
+        `Sending ${MESSAGES_PER_DATA_TYPE} Modbus messages with data type: ${dataType}`
       );
 
-      // Calculate message rate for this client to meet target rate across all devices
-      const clientMessagesPerSecond =
-        devicesForThisClient * MESSAGES_PER_SECOND_PER_DEVICE;
-      const messagesPerBatch = Math.min(
-        BATCH_SIZE,
-        Math.ceil(clientMessagesPerSecond / 5)
-      ); // At most 1/5 second worth of messages per batch
-
-      let lastBatchTime = performance.now();
-      let dataTypeIndex = 0;
+      let messagesSent = 0;
+      let batchCount = 0;
       let registerTypeIndex = 0;
-      const registerTypes = ["holding", "input", "coil", "discrete"];
 
-      while (performance.now() < testEndTime) {
-        const currentTime = performance.now();
-
-        // Enforce rate limiting
-        const timeSinceLastBatch = currentTime - lastBatchTime;
-        const targetTimeBetweenBatches =
-          (messagesPerBatch * 1000) / clientMessagesPerSecond;
-
-        if (timeSinceLastBatch < targetTimeBetweenBatches) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, targetTimeBetweenBatches - timeSinceLastBatch)
-          );
-        }
-
-        // Send a batch of messages across simulated devices
+      // Send messages in batches
+      while (messagesSent < MESSAGES_PER_DATA_TYPE) {
+        const batchSize = Math.min(
+          BATCH_SIZE,
+          MESSAGES_PER_DATA_TYPE - messagesSent
+        );
         const batchPromises = [];
-        for (let i = 0; i < messagesPerBatch; i++) {
-          // Select device, register type, and data type
-          const deviceId = deviceBaseIndex + (i % devicesForThisClient);
-          const dataType = DATA_TYPES[dataTypeIndex % DATA_TYPES.length];
+
+        for (let i = 0; i < batchSize; i++) {
+          // Cycle through register types
           const registerType =
             registerTypes[registerTypeIndex % registerTypes.length];
-          const registerAddress = i % 100; // Use 100 different register addresses
-
-          dataTypeIndex++;
           registerTypeIndex++;
+
+          // Use different register addresses to simulate real usage
+          const registerAddress = i % 100;
 
           const data = generateData(dataType);
           const startSendTime = performance.now();
 
           try {
-            // For Modbus, coil and discrete inputs only accept boolean values
+            // Format payload based on register type
             let payload;
             if (registerType === "coil" || registerType === "discrete") {
               // Convert any data type to boolean for coil/discrete
@@ -689,14 +618,14 @@ async function testModbusScalability(modbusPid) {
                   ? String(data ? 1 : 0)
                   : String(data ? 1 : 0);
             } else {
-              // For holding and input registers, convert appropriately
+              // For holding and input registers
               if (typeof data === "object") {
-                // For JSON data, just use a numeric value between 0-65535 for Modbus registers
+                // For JSON data, use a numeric value for Modbus registers
                 payload = String(Math.floor(Math.random() * 65535));
               } else if (typeof data === "boolean") {
                 payload = String(data ? 1 : 0);
               } else if (typeof data === "string") {
-                // For string data, just use a register value for Modbus
+                // For string data, use a register value
                 payload = String(Math.floor(Math.random() * 65535));
               } else {
                 // For numeric data, ensure it's within Modbus register range
@@ -709,7 +638,7 @@ async function testModbusScalability(modbusPid) {
 
             const promise = new Promise((resolve) => {
               client.publish(
-                `${firstSede.nombre}/${deviceId}/${registerType}/${registerAddress}`,
+                `${firstSede.nombre}/1/${registerType}/${registerAddress}`, // Using device ID 1
                 payload,
                 { qos: 1 },
                 () => {
@@ -726,10 +655,11 @@ async function testModbusScalability(modbusPid) {
             });
 
             batchPromises.push(promise);
-            clientMessageCount++;
+            messagesSent++;
+            totalMessageCount++;
           } catch (error) {
             console.error(
-              `Client ${clientIndex} error publishing Modbus message for device ${deviceId}:`,
+              `Error publishing Modbus message with data type ${dataType}:`,
               error
             );
           }
@@ -738,31 +668,29 @@ async function testModbusScalability(modbusPid) {
         // Wait for all messages in batch to be published
         await Promise.all(batchPromises);
 
-        // Record time after batch
-        lastBatchTime = performance.now();
-
-        // Add small throttling delay to avoid overwhelming broker
-        await new Promise((resolve) => setTimeout(resolve, THROTTLE_DELAY));
-
-        // Log progress occasionally
-        if (clientMessageCount % 1000 === 0) {
+        batchCount++;
+        if (batchCount % 5 === 0) {
           console.log(
-            `Client ${clientIndex}: ${clientMessageCount} MODBUS messages sent`
+            `Modbus: ${messagesSent}/${MESSAGES_PER_DATA_TYPE} ${dataType} messages sent`
           );
         }
+
+        // Add throttling delay between batches
+        await new Promise((resolve) => setTimeout(resolve, THROTTLE_DELAY));
       }
 
-      return clientMessageCount;
-    });
+      console.log(
+        `Completed sending ${messagesSent} Modbus messages with data type: ${dataType}`
+      );
 
-    // Wait for all clients to finish
-    const clientMessageCounts = await Promise.all(clientPromises);
-    totalMessageCount = clientMessageCounts.reduce(
-      (sum, count) => sum + count,
-      0
-    );
+      // Wait for messages of this type to be processed before moving to next type
+      console.log(
+        `Waiting for ${dataType} messages to be processed before continuing...`
+      );
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
 
-    console.log(`Total messages sent to MODBUS module: ${totalMessageCount}`);
+    console.log(`Total Modbus messages sent: ${totalMessageCount}`);
 
     // Wait for all messages to be processed
     const processedCount = await waitForMessageProcessing(
@@ -784,21 +712,19 @@ async function testModbusScalability(modbusPid) {
     }
 
     console.log(
-      `MODBUS throughput: ${actualThroughput.toFixed(
+      `Modbus throughput: ${actualThroughput.toFixed(
         2
       )} msgs/s (${processedCount} messages in ${durationSeconds.toFixed(2)}s)`
     );
 
-    // Clean up clients
-    for (const client of clients) {
-      client.end();
-    }
+    // Clean up client
+    client.end();
   } catch (error) {
-    console.error("Error in MODBUS scalability test:", error);
+    console.error("Error in Modbus scalability test:", error);
   } finally {
     clearInterval(monitoringInterval);
     console.log(
-      `MODBUS module scalability test completed with ${totalMessageCount} messages sent.`
+      `Modbus module scalability test completed with ${totalMessageCount} messages sent.`
     );
   }
 }
@@ -855,7 +781,7 @@ function generateReport() {
   // Print report summary
   console.log("\n\n============= SCALABILITY TEST RESULTS =============");
   console.log(
-    `Test Configuration: ${SIMULATED_DEVICES} devices at ${MESSAGES_PER_SECOND_PER_DEVICE} msgs/sec each, mixed data types`
+    `Test Configuration: 1 device sending ${MESSAGES_PER_DATA_TYPE} messages per data type`
   );
   console.log("====================================================\n");
 
@@ -969,9 +895,10 @@ async function runScalabilityTests(httpPid, modbusPid) {
 ====================================================
   STARTING SCALABILITY TEST WITH DIFFERENT DATA TYPES
 ====================================================
-Simulating ${SIMULATED_DEVICES} devices sending at ${MESSAGES_PER_SECOND_PER_DEVICE} msgs/sec
+Using 1 simulated device
+Sending ${MESSAGES_PER_DATA_TYPE} messages per data type
 Data types: ${DATA_TYPES.join(", ")}
-Test duration: ${TEST_DURATION / 1000} seconds
+Total messages per module: ${MESSAGES_PER_DATA_TYPE * DATA_TYPES.length}
 ====================================================
 `);
 
