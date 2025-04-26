@@ -19,10 +19,10 @@ const pidusage = require("pidusage");
 const config = require("./config.json");
 
 // Test configuration
-const TEST_DURATION = 120000; // 2 minute in ms
+const TEST_DURATION = 60000; // 1 minute in ms
 const SAMPLE_INTERVAL = 1000; // 1 second sampling interval for CPU/mem
 const TEST_MODULES = ["http", "modbus"];
-const PARALLEL_CLIENTS = 5; // Number of parallel MQTT clients to use
+const PARALLEL_CLIENTS = 1; // Number of parallel MQTT clients to use
 const BATCH_SIZE = 50; // Number of messages to send in a batch
 const THROTTLE_DELAY = 10; // ms to wait between batches
 const QOS_LEVEL = 1; // QoS level for MQTT messages
