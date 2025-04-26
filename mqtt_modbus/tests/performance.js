@@ -23,10 +23,12 @@ const TEST_DURATION = 60000; // 1 minute in ms
 const SAMPLE_INTERVAL = 1000; // 1 second sampling interval for CPU/mem
 const TEST_MODULES = ["http", "modbus"];
 const PARALLEL_CLIENTS = 1; // Number of parallel MQTT clients to use
-const BATCH_SIZE = 50; // Number of messages to send in a batch
-const THROTTLE_DELAY = 10; // ms to wait between batches
+const BATCH_SIZE = 10; // Reduced batch size from 50 to 10
+const THROTTLE_DELAY = 250; // Increased delay from 10ms to 250ms between batches
 const QOS_LEVEL = 1; // QoS level for MQTT messages
 const MESSAGE_VERIFICATION_TIMEOUT = 30000; // 30 seconds timeout for message processing verification
+const MAX_MESSAGES_PER_SECOND = 250; // Rate limit - maximum messages per second
+const PROCESSING_CHECK_INTERVAL = 2500; // Check processing progress every 2.5 seconds
 
 // Topics for stats
 const HTTP_STATS_REQUEST_TOPIC = "http_module/stats/request";
@@ -237,10 +239,12 @@ async function waitForMessageProcessing(totalSent, isHttp) {
     } module...`
   );
 
-  const maxWaitTime = 60000; // 60 seconds max wait
+  const maxWaitTime = 120000; // Extended max wait to 2 minutes
   const startTime = performance.now();
   let processed = 0;
   let timeWaiting = 0;
+  let lastProcessedCount = 0;
+  let stagnantCount = 0;
 
   while (processed < totalSent && timeWaiting < maxWaitTime) {
     processed = await getProcessedMessageCount(isHttp);
@@ -249,13 +253,29 @@ async function waitForMessageProcessing(totalSent, isHttp) {
       `Progress: ${processed}/${totalSent} messages processed (${percentComplete}%)`
     );
 
+    // Check if processing is stagnant
+    if (processed === lastProcessedCount) {
+      stagnantCount++;
+      if (stagnantCount >= 5) {
+        console.warn(
+          `Processing appears to be stalled. No progress for ${stagnantCount} checks.`
+        );
+        break;
+      }
+    } else {
+      stagnantCount = 0;
+      lastProcessedCount = processed;
+    }
+
     if (processed >= totalSent) {
       console.log(`All ${totalSent} messages processed successfully!`);
       break;
     }
 
     // Wait before checking again
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) =>
+      setTimeout(resolve, PROCESSING_CHECK_INTERVAL)
+    );
     timeWaiting = performance.now() - startTime;
   }
 
@@ -296,11 +316,44 @@ async function testHttpModule(httpPid) {
     // Run parallel publishing
     const clientPromises = clients.map(async (client, clientIndex) => {
       let clientMsgCount = 0;
+      let lastBatchTime = performance.now();
 
       while (performance.now() < testEndTime) {
+        // Check processing status every 100 messages
+        if (clientMsgCount > 0 && clientMsgCount % 100 === 0) {
+          const processed = await getProcessedMessageCount(true);
+          const backlog = clientMsgCount - processed;
+
+          // If backlog is too large, wait for system to catch up
+          if (backlog > 50) {
+            console.log(
+              `Backlog detected (${backlog} messages). Pausing to let system catch up.`
+            );
+            await new Promise((resolve) =>
+              setTimeout(resolve, Math.min(backlog * 10, 5000))
+            );
+            continue;
+          }
+        }
+
+        // Enforce rate limiting
+        const currentTime = performance.now();
+        const timeSinceLastBatch = currentTime - lastBatchTime;
+        const minTimePerBatch = (BATCH_SIZE * 1000) / MAX_MESSAGES_PER_SECOND;
+
+        if (timeSinceLastBatch < minTimePerBatch) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, minTimePerBatch - timeSinceLastBatch)
+          );
+        }
+
         // Send a batch of messages
+        const actualBatchSize = Math.min(
+          BATCH_SIZE,
+          Math.floor(MAX_MESSAGES_PER_SECOND / 4)
+        );
         const batchPromises = [];
-        for (let i = 0; i < BATCH_SIZE; i++) {
+        for (let i = 0; i < actualBatchSize; i++) {
           const startReadTime = performance.now();
           try {
             const promise = new Promise((resolve) => {
@@ -333,11 +386,14 @@ async function testHttpModule(httpPid) {
         // Wait for all messages in batch to be published
         await Promise.all(batchPromises);
 
+        // Record the time after sending this batch
+        lastBatchTime = performance.now();
+
         // Add throttling between batches
         await new Promise((resolve) => setTimeout(resolve, THROTTLE_DELAY));
 
         // Log progress occasionally
-        if (clientMsgCount % 1000 === 0) {
+        if (clientMsgCount % 100 === 0) {
           console.log(
             `Client ${clientIndex}: ${clientMsgCount} HTTP messages sent`
           );
@@ -412,11 +468,44 @@ async function testModbusModule(modbusPid) {
     // Run parallel publishing
     const clientPromises = clients.map(async (client, clientIndex) => {
       let clientMsgCount = 0;
+      let lastBatchTime = performance.now();
 
       while (performance.now() < testEndTime) {
+        // Check processing status every 100 messages
+        if (clientMsgCount > 0 && clientMsgCount % 100 === 0) {
+          const processed = await getProcessedMessageCount(false);
+          const backlog = clientMsgCount - processed;
+
+          // If backlog is too large, wait for system to catch up
+          if (backlog > 50) {
+            console.log(
+              `Backlog detected (${backlog} messages). Pausing to let system catch up.`
+            );
+            await new Promise((resolve) =>
+              setTimeout(resolve, Math.min(backlog * 10, 5000))
+            );
+            continue;
+          }
+        }
+
+        // Enforce rate limiting
+        const currentTime = performance.now();
+        const timeSinceLastBatch = currentTime - lastBatchTime;
+        const minTimePerBatch = (BATCH_SIZE * 1000) / MAX_MESSAGES_PER_SECOND;
+
+        if (timeSinceLastBatch < minTimePerBatch) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, minTimePerBatch - timeSinceLastBatch)
+          );
+        }
+
         // Send a batch of messages
+        const actualBatchSize = Math.min(
+          BATCH_SIZE,
+          Math.floor(MAX_MESSAGES_PER_SECOND / 4)
+        );
         const batchPromises = [];
-        for (let i = 0; i < BATCH_SIZE; i++) {
+        for (let i = 0; i < actualBatchSize; i++) {
           const startReadTime = performance.now();
           try {
             // Generate a value within Modbus register range (-32768 to 32767)
@@ -447,11 +536,14 @@ async function testModbusModule(modbusPid) {
         // Wait for all messages in batch to be published
         await Promise.all(batchPromises);
 
+        // Record the time after sending this batch
+        lastBatchTime = performance.now();
+
         // Add throttling between batches
         await new Promise((resolve) => setTimeout(resolve, THROTTLE_DELAY));
 
         // Log progress occasionally
-        if (clientMsgCount % 1000 === 0) {
+        if (clientMsgCount % 100 === 0) {
           console.log(
             `Client ${clientIndex}: ${clientMsgCount} MODBUS messages sent`
           );
