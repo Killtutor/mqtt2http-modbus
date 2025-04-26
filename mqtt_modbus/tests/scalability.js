@@ -38,6 +38,7 @@ const HTTP_STATS_RESET_TOPIC = "http_module/stats/reset";
 const MODBUS_STATS_REQUEST_TOPIC = "modbus_module/stats/request";
 const MODBUS_STATS_RESPONSE_TOPIC = "modbus_module/stats/response";
 const MODBUS_STATS_RESET_TOPIC = "modbus_module/stats/reset";
+const TEST_MODULES = ["http", "modbus"];
 
 // Results storage
 const results = {
