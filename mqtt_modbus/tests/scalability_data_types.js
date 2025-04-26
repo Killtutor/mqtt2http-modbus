@@ -4,8 +4,8 @@
  * Objective: Evaluate gateway performance when handling different data types
  * (integers, decimals, booleans, strings, JSON) with a controlled message load.
  *
- * Configuration: 1 device sending exactly 1000 messages for each data type (5000 total)
- * with throttling to avoid flooding the service while still providing meaningful metrics.
+ * Configuration: 1 device sending exactly 500 messages for each data type
+ * with separate measurements for each data type's performance.
  */
 
 "use strict";
@@ -18,11 +18,11 @@ const pidusage = require("pidusage");
 const config = require("./config.json");
 
 // Test configuration
-const SAMPLE_INTERVAL = 1000; // 1 second sampling interval for CPU/mem
 const TEST_MODULES = ["http", "modbus"];
-const MESSAGES_PER_DATA_TYPE = 1000; // Send 1000 messages for each data type for better metrics
+const MESSAGES_PER_DATA_TYPE = 500; // Send 500 messages for each data type
 const MESSAGE_VERIFICATION_TIMEOUT = 120000; // 2 minutes timeout for message processing verification
 const PROCESSING_CHECK_INTERVAL = 3000; // Check processing progress every 3 seconds
+const CPU_MEM_SAMPLING_INTERVAL = 500; // Sample CPU and memory every 500ms
 
 // Rate limiting and throttling parameters
 const BATCH_SIZE = 25; // Batch size to avoid overwhelming the broker
@@ -48,40 +48,35 @@ const DATA_TYPES = [
 // Results storage
 const results = {
   http: {
-    systemLatency: {}, // Track full processing latency by data type
-    throughput: [],
-    cpuUsage: [],
-    memoryUsage: [],
-    throughputSamples: [],
-    dataTypePerformance: {}
+    dataTypeResults: {}
   },
   modbus: {
-    systemLatency: {}, // Track full processing latency by data type
-    throughput: [],
-    cpuUsage: [],
-    memoryUsage: [],
-    throughputSamples: [],
-    dataTypePerformance: {}
+    dataTypeResults: {}
   }
 };
 
 // Initialize data type performance metrics
 DATA_TYPES.forEach((type) => {
-  results.http.systemLatency[type] = []; // Array of processing latencies for this data type
-  results.modbus.systemLatency[type] = []; // Array of processing latencies for this data type
-
-  results.http.dataTypePerformance[type] = {
-    processingStartTime: 0, // When processing started for this data type
-    processingEndTime: 0, // When processing completed for this data type
-    sent: 0, // Number of messages sent
-    processed: 0 // Number of messages processed
+  results.http.dataTypeResults[type] = {
+    startTime: 0, // When processing started
+    endTime: 0, // When processing ended
+    messagesSent: 0, // Number of messages sent
+    messagesProcessed: 0, // Number of messages processed
+    cpuSamples: [], // CPU usage samples during test
+    memorySamples: [], // Memory usage samples during test
+    latencyMs: 0, // Processing latency in ms
+    throughputMsgSec: 0 // Processing throughput in msgs/sec
   };
 
-  results.modbus.dataTypePerformance[type] = {
-    processingStartTime: 0,
-    processingEndTime: 0,
-    sent: 0,
-    processed: 0
+  results.modbus.dataTypeResults[type] = {
+    startTime: 0,
+    endTime: 0,
+    messagesSent: 0,
+    messagesProcessed: 0,
+    cpuSamples: [],
+    memorySamples: [],
+    latencyMs: 0,
+    throughputMsgSec: 0
   };
 });
 
@@ -98,11 +93,16 @@ const mqttCredentials = {
 let statsMqttClient = null;
 
 // Performance monitoring function
-async function monitorPerformance(pid, moduleType) {
+async function monitorPerformance(pid, moduleType, dataType) {
   try {
     const stats = await pidusage(pid);
-    results[moduleType].cpuUsage.push(stats.cpu);
-    results[moduleType].memoryUsage.push(stats.memory / 1024 / 1024); // Convert to MB
+    // Store this sample for the current data type
+    if (dataType) {
+      results[moduleType].dataTypeResults[dataType].cpuSamples.push(stats.cpu);
+      results[moduleType].dataTypeResults[dataType].memorySamples.push(
+        stats.memory / 1024 / 1024
+      ); // Convert to MB
+    }
     return stats;
   } catch (error) {
     console.error(`Error monitoring ${moduleType} performance:`, error);
@@ -312,10 +312,6 @@ async function waitForMessageProcessing(
     } module...`
   );
 
-  // Store processing start time for latency calculation
-  results[moduleType].dataTypePerformance[dataType].processingStartTime =
-    performance.now();
-
   const maxWaitTime = 180000; // Up to 3 minutes wait time
   const startTime = performance.now();
   let processed = 0;
@@ -326,8 +322,8 @@ async function waitForMessageProcessing(
   while (processed < totalSent && timeWaiting < maxWaitTime) {
     processed = await getProcessedMessageCount(isHttp);
 
-    // Update processed count in results
-    results[moduleType].dataTypePerformance[dataType].processed = processed;
+    // Record the processed count
+    results[moduleType].dataTypeResults[dataType].messagesProcessed = processed;
 
     const percentComplete = Math.round((processed / totalSent) * 100);
     console.log(
@@ -360,20 +356,6 @@ async function waitForMessageProcessing(
     timeWaiting = performance.now() - startTime;
   }
 
-  // Store processing end time for latency calculation
-  const endTime = performance.now();
-  results[moduleType].dataTypePerformance[dataType].processingEndTime = endTime;
-
-  // Calculate and store system latency (full processing time)
-  const processingTime =
-    endTime -
-    results[moduleType].dataTypePerformance[dataType].processingStartTime;
-  results[moduleType].systemLatency[dataType].push(processingTime);
-
-  console.log(
-    `Processing time for ${dataType}: ${processingTime.toFixed(2)} ms`
-  );
-
   if (processed < totalSent) {
     console.warn(
       `Timeout waiting for message processing. Only ${processed}/${totalSent} processed (${Math.round(
@@ -385,36 +367,38 @@ async function waitForMessageProcessing(
   return processed;
 }
 
-// Collect throughput sample
-async function collectThroughputSample(
-  moduleType,
-  isHttp,
-  startTime,
-  lastMessageCount
-) {
-  const currentTime = performance.now();
-  const elapsedSeconds = (currentTime - startTime) / 1000;
+// Start CPU/memory monitoring for a specific data type test
+function startCpuMemoryMonitoring(pid, moduleType, dataType) {
+  let intervalId = null;
 
-  // Get current processed message count
-  const currentProcessed = await getProcessedMessageCount(isHttp);
+  console.log(
+    `Starting CPU/memory monitoring for ${moduleType} - ${dataType}...`
+  );
 
-  // Calculate throughput for this sample period
-  const messageDelta = currentProcessed - lastMessageCount;
-  const sampleDuration = 5; // Sample over approximately 5 seconds
-  const throughput = messageDelta / sampleDuration;
+  // Clear previous samples if any
+  results[moduleType].dataTypeResults[dataType].cpuSamples = [];
+  results[moduleType].dataTypeResults[dataType].memorySamples = [];
 
-  if (messageDelta > 0) {
-    console.log(
-      `[${elapsedSeconds.toFixed(
-        1
-      )}s] Current throughput sample: ${throughput.toFixed(
-        2
-      )} msgs/s (${messageDelta} messages in ~${sampleDuration}s)`
-    );
-    results[moduleType].throughputSamples.push(throughput);
+  // Start the interval
+  intervalId = setInterval(() => {
+    monitorPerformance(pid, moduleType, dataType);
+  }, CPU_MEM_SAMPLING_INTERVAL);
+
+  return intervalId;
+}
+
+// Stop CPU/memory monitoring
+function stopCpuMemoryMonitoring(intervalId) {
+  if (intervalId) {
+    clearInterval(intervalId);
+    console.log("CPU/memory monitoring stopped");
   }
+}
 
-  return currentProcessed;
+// Calculate average of an array of numbers
+function calculateAverage(array) {
+  if (array.length === 0) return 0;
+  return array.reduce((sum, value) => sum + value, 0) / array.length;
 }
 
 // Test HTTP module with different data types
@@ -423,36 +407,14 @@ async function testHttpScalability(httpPid) {
     "Starting HTTP module scalability test with different data types..."
   );
 
-  // Reset message counters before starting
-  await resetMessageCounters(true);
-
   let totalMessageCount = 0;
-  const startTime = performance.now();
-  let lastSampleTime = startTime;
-  let lastSampleCount = 0;
-
-  // Start performance monitoring
-  const monitoringInterval = setInterval(async () => {
-    await monitorPerformance(httpPid, "http");
-
-    // Collect throughput sample every 5 seconds
-    const currentTime = performance.now();
-    if (currentTime - lastSampleTime >= 5000) {
-      lastSampleCount = await collectThroughputSample(
-        "http",
-        true,
-        startTime,
-        lastSampleCount
-      );
-      lastSampleTime = currentTime;
-    }
-  }, SAMPLE_INTERVAL);
+  const overallStartTime = performance.now();
 
   try {
     // Connect a single MQTT client
     const client = await connectMqttClient("http");
 
-    // Process each data type sequentially, sending exactly MESSAGES_PER_DATA_TYPE messages for each
+    // Process each data type sequentially
     for (const dataType of DATA_TYPES) {
       console.log(`\n===== Testing HTTP with data type: ${dataType} =====`);
       console.log(`Sending ${MESSAGES_PER_DATA_TYPE} HTTP messages...`);
@@ -460,11 +422,19 @@ async function testHttpScalability(httpPid) {
       // Reset counters for this data type test
       await resetMessageCounters(true);
 
+      // Start monitoring for this data type
+      const monitoringIntervalId = startCpuMemoryMonitoring(
+        httpPid,
+        "http",
+        dataType
+      );
+
+      // Record test start time
+      const startTime = performance.now();
+      results.http.dataTypeResults[dataType].startTime = startTime;
+
       let messagesSent = 0;
       let batchCount = 0;
-
-      // Record specific start time for this data type
-      const dataTypeStartTime = performance.now();
 
       // Send messages in batches
       while (messagesSent < MESSAGES_PER_DATA_TYPE) {
@@ -493,7 +463,6 @@ async function testHttpScalability(httpPid) {
 
             batchPromises.push(promise);
             messagesSent++;
-            results.http.dataTypePerformance[dataType].sent++;
             totalMessageCount++;
           } catch (error) {
             console.error(
@@ -521,7 +490,10 @@ async function testHttpScalability(httpPid) {
         `Completed sending ${messagesSent} HTTP messages with data type: ${dataType}`
       );
 
-      // Wait for all messages to be processed and measure processing time
+      // Store messages sent
+      results.http.dataTypeResults[dataType].messagesSent = messagesSent;
+
+      // Wait for all messages to be processed
       const processedCount = await waitForMessageProcessing(
         messagesSent,
         true,
@@ -529,20 +501,33 @@ async function testHttpScalability(httpPid) {
         dataType
       );
 
-      // Calculate throughput for this data type
-      const dataTypeEndTime = performance.now();
-      const dataTypeDurationSeconds =
-        (dataTypeEndTime - dataTypeStartTime) / 1000;
-      const dataTypeThroughput = processedCount / dataTypeDurationSeconds;
+      // Record end time and calculate metrics
+      const endTime = performance.now();
+      results.http.dataTypeResults[dataType].endTime = endTime;
+
+      // Calculate latency and throughput
+      const latencyMs = endTime - startTime;
+      const throughputMsgSec = processedCount / (latencyMs / 1000);
+
+      // Store calculated metrics
+      results.http.dataTypeResults[dataType].latencyMs = latencyMs;
+      results.http.dataTypeResults[dataType].throughputMsgSec =
+        throughputMsgSec;
 
       console.log(
-        `HTTP ${dataType} throughput: ${dataTypeThroughput.toFixed(
-          2
-        )} msgs/s ` +
-          `(${processedCount} messages in ${dataTypeDurationSeconds.toFixed(
-            2
-          )}s)`
+        `HTTP ${dataType} metrics:
+         - Processing time: ${latencyMs.toFixed(2)} ms
+         - Throughput: ${throughputMsgSec.toFixed(2)} msgs/s
+         - CPU usage (avg): ${calculateAverage(
+           results.http.dataTypeResults[dataType].cpuSamples
+         ).toFixed(2)}%
+         - Memory usage (avg): ${calculateAverage(
+           results.http.dataTypeResults[dataType].memorySamples
+         ).toFixed(2)} MB`
       );
+
+      // Stop monitoring for this data type
+      stopCpuMemoryMonitoring(monitoringIntervalId);
 
       // Wait a bit before moving to next data type
       console.log(`Waiting before testing next data type...`);
@@ -551,22 +536,12 @@ async function testHttpScalability(httpPid) {
 
     console.log(`\nTotal HTTP messages sent: ${totalMessageCount}`);
 
-    // Calculate overall throughput
-    const endTime = performance.now();
-    const durationSeconds = (endTime - startTime) / 1000;
-    const actualThroughput = totalMessageCount / durationSeconds;
-
-    // Add final throughput
-    if (results.http.throughputSamples.length > 0) {
-      results.http.throughputSamples.push(actualThroughput);
-      results.http.throughput = results.http.throughputSamples;
-    } else {
-      results.http.throughput.push(actualThroughput);
-    }
+    // Overall time
+    const overallEndTime = performance.now();
+    const overallDurationSec = (overallEndTime - overallStartTime) / 1000;
 
     console.log(
-      `Overall HTTP throughput: ${actualThroughput.toFixed(2)} msgs/s ` +
-        `(${totalMessageCount} messages in ${durationSeconds.toFixed(2)}s)`
+      `Overall HTTP test completed in ${overallDurationSec.toFixed(2)} seconds`
     );
 
     // Clean up client
@@ -574,7 +549,6 @@ async function testHttpScalability(httpPid) {
   } catch (error) {
     console.error("Error in HTTP scalability test:", error);
   } finally {
-    clearInterval(monitoringInterval);
     console.log(
       `HTTP module scalability test completed with ${totalMessageCount} messages sent.`
     );
@@ -587,33 +561,11 @@ async function testModbusScalability(modbusPid) {
     "Starting Modbus module scalability test with different data types..."
   );
 
-  // Reset message counters before starting
-  await resetMessageCounters(false);
-
   let totalMessageCount = 0;
-  const startTime = performance.now();
-  let lastSampleTime = startTime;
-  let lastSampleCount = 0;
+  const overallStartTime = performance.now();
 
   // Find first sede in config for Modbus testing
   const firstSede = config.modbusSedes[0];
-
-  // Start performance monitoring
-  const monitoringInterval = setInterval(async () => {
-    await monitorPerformance(modbusPid, "modbus");
-
-    // Collect throughput sample every 5 seconds
-    const currentTime = performance.now();
-    if (currentTime - lastSampleTime >= 5000) {
-      lastSampleCount = await collectThroughputSample(
-        "modbus",
-        false,
-        startTime,
-        lastSampleCount
-      );
-      lastSampleTime = currentTime;
-    }
-  }, SAMPLE_INTERVAL);
 
   try {
     // Connect a single MQTT client
@@ -630,12 +582,20 @@ async function testModbusScalability(modbusPid) {
       // Reset counters for this data type test
       await resetMessageCounters(false);
 
+      // Start monitoring for this data type
+      const monitoringIntervalId = startCpuMemoryMonitoring(
+        modbusPid,
+        "modbus",
+        dataType
+      );
+
+      // Record test start time
+      const startTime = performance.now();
+      results.modbus.dataTypeResults[dataType].startTime = startTime;
+
       let messagesSent = 0;
       let batchCount = 0;
       let registerTypeIndex = 0;
-
-      // Record specific start time for this data type
-      const dataTypeStartTime = performance.now();
 
       // Send messages in batches
       while (messagesSent < MESSAGES_PER_DATA_TYPE) {
@@ -697,7 +657,6 @@ async function testModbusScalability(modbusPid) {
 
             batchPromises.push(promise);
             messagesSent++;
-            results.modbus.dataTypePerformance[dataType].sent++;
             totalMessageCount++;
           } catch (error) {
             console.error(
@@ -725,7 +684,10 @@ async function testModbusScalability(modbusPid) {
         `Completed sending ${messagesSent} Modbus messages with data type: ${dataType}`
       );
 
-      // Wait for all messages to be processed and measure processing time
+      // Store messages sent
+      results.modbus.dataTypeResults[dataType].messagesSent = messagesSent;
+
+      // Wait for all messages to be processed
       const processedCount = await waitForMessageProcessing(
         messagesSent,
         false,
@@ -733,20 +695,33 @@ async function testModbusScalability(modbusPid) {
         dataType
       );
 
-      // Calculate throughput for this data type
-      const dataTypeEndTime = performance.now();
-      const dataTypeDurationSeconds =
-        (dataTypeEndTime - dataTypeStartTime) / 1000;
-      const dataTypeThroughput = processedCount / dataTypeDurationSeconds;
+      // Record end time and calculate metrics
+      const endTime = performance.now();
+      results.modbus.dataTypeResults[dataType].endTime = endTime;
+
+      // Calculate latency and throughput
+      const latencyMs = endTime - startTime;
+      const throughputMsgSec = processedCount / (latencyMs / 1000);
+
+      // Store calculated metrics
+      results.modbus.dataTypeResults[dataType].latencyMs = latencyMs;
+      results.modbus.dataTypeResults[dataType].throughputMsgSec =
+        throughputMsgSec;
 
       console.log(
-        `Modbus ${dataType} throughput: ${dataTypeThroughput.toFixed(
-          2
-        )} msgs/s ` +
-          `(${processedCount} messages in ${dataTypeDurationSeconds.toFixed(
-            2
-          )}s)`
+        `Modbus ${dataType} metrics:
+         - Processing time: ${latencyMs.toFixed(2)} ms
+         - Throughput: ${throughputMsgSec.toFixed(2)} msgs/s
+         - CPU usage (avg): ${calculateAverage(
+           results.modbus.dataTypeResults[dataType].cpuSamples
+         ).toFixed(2)}%
+         - Memory usage (avg): ${calculateAverage(
+           results.modbus.dataTypeResults[dataType].memorySamples
+         ).toFixed(2)} MB`
       );
+
+      // Stop monitoring for this data type
+      stopCpuMemoryMonitoring(monitoringIntervalId);
 
       // Wait a bit before moving to next data type
       console.log(`Waiting before testing next data type...`);
@@ -755,22 +730,14 @@ async function testModbusScalability(modbusPid) {
 
     console.log(`\nTotal Modbus messages sent: ${totalMessageCount}`);
 
-    // Calculate overall throughput
-    const endTime = performance.now();
-    const durationSeconds = (endTime - startTime) / 1000;
-    const actualThroughput = totalMessageCount / durationSeconds;
-
-    // Add final throughput
-    if (results.modbus.throughputSamples.length > 0) {
-      results.modbus.throughputSamples.push(actualThroughput);
-      results.modbus.throughput = results.modbus.throughputSamples;
-    } else {
-      results.modbus.throughput.push(actualThroughput);
-    }
+    // Overall time
+    const overallEndTime = performance.now();
+    const overallDurationSec = (overallEndTime - overallStartTime) / 1000;
 
     console.log(
-      `Overall Modbus throughput: ${actualThroughput.toFixed(2)} msgs/s ` +
-        `(${totalMessageCount} messages in ${durationSeconds.toFixed(2)}s)`
+      `Overall Modbus test completed in ${overallDurationSec.toFixed(
+        2
+      )} seconds`
     );
 
     // Clean up client
@@ -778,169 +745,58 @@ async function testModbusScalability(modbusPid) {
   } catch (error) {
     console.error("Error in Modbus scalability test:", error);
   } finally {
-    clearInterval(monitoringInterval);
     console.log(
       `Modbus module scalability test completed with ${totalMessageCount} messages sent.`
     );
   }
 }
 
-// Calculate statistics for arrays of metrics
-function calculateStats(array) {
-  if (array.length === 0) return { avg: 0, min: 0, max: 0, stdDev: 0 };
-
-  const sum = array.reduce((a, b) => a + b, 0);
-  const avg = sum / array.length;
-  const min = Math.min(...array);
-  const max = Math.max(...array);
-
-  const squareDiffs = array.map((value) => {
-    const diff = value - avg;
-    return diff * diff;
-  });
-
-  const avgSquareDiff =
-    squareDiffs.reduce((a, b) => a + b, 0) / squareDiffs.length;
-  const stdDev = Math.sqrt(avgSquareDiff);
-
-  return { avg, min, max, stdDev };
-}
-
 // Generate the final report
 function generateReport() {
-  const report = {
-    summary: {},
-    dataTypes: {}
-  };
-
-  for (const module of TEST_MODULES) {
-    // Calculate system latency averages for each data type
-    const systemLatency = {};
-    for (const dataType of DATA_TYPES) {
-      systemLatency[dataType] = calculateStats(
-        results[module].systemLatency[dataType]
-      );
-    }
-
-    // Overall performance metrics
-    report.summary[module] = {
-      throughput: calculateStats(results[module].throughput),
-      cpuUsage: calculateStats(results[module].cpuUsage),
-      memoryUsage: calculateStats(results[module].memoryUsage)
-    };
-
-    // Per data type metrics
-    report.dataTypes[module] = {};
-    for (const dataType of DATA_TYPES) {
-      // Calculate processing time as the difference between start and end times
-      const processingData = results[module].dataTypePerformance[dataType];
-      const processingTime =
-        processingData.processingEndTime - processingData.processingStartTime;
-      const throughput = processingData.processed / (processingTime / 1000); // msgs/sec
-
-      report.dataTypes[module][dataType] = {
-        systemLatency: systemLatency[dataType],
-        throughput: throughput
-      };
-    }
-  }
-
-  // Print report summary
   console.log("\n\n============= SCALABILITY TEST RESULTS =============");
   console.log(
     `Test Configuration: 1 device sending ${MESSAGES_PER_DATA_TYPE} messages per data type`
   );
   console.log("====================================================\n");
 
-  // Summary table for each module
-  for (const module of TEST_MODULES) {
-    console.log(`\n${module.toUpperCase()} MODULE SUMMARY:`);
-    console.log(
-      "----------------------------------------------------------------------------------"
-    );
-    console.log(
-      "| Métrica              | Promedio      | Mínimo        | Máximo        | Desviación estándar |"
-    );
-    console.log(
-      "|----------------------|---------------|---------------|---------------|----------------------|"
-    );
-    console.log(
-      `| Rendimiento (msgs/s) | ${report.summary[module].throughput.avg
-        .toFixed(2)
-        .padEnd(13)} | ${report.summary[module].throughput.min
-        .toFixed(2)
-        .padEnd(13)} | ${report.summary[module].throughput.max
-        .toFixed(2)
-        .padEnd(13)} | ${report.summary[module].throughput.stdDev
-        .toFixed(2)
-        .padEnd(20)} |`
-    );
-    console.log(
-      `| Uso de CPU (%)       | ${report.summary[module].cpuUsage.avg
-        .toFixed(2)
-        .padEnd(13)} | ${report.summary[module].cpuUsage.min
-        .toFixed(2)
-        .padEnd(13)} | ${report.summary[module].cpuUsage.max
-        .toFixed(2)
-        .padEnd(13)} | ${report.summary[module].cpuUsage.stdDev
-        .toFixed(2)
-        .padEnd(20)} |`
-    );
-    console.log(
-      `| Uso de memoria (MB)  | ${report.summary[module].memoryUsage.avg
-        .toFixed(2)
-        .padEnd(13)} | ${report.summary[module].memoryUsage.min
-        .toFixed(2)
-        .padEnd(13)} | ${report.summary[module].memoryUsage.max
-        .toFixed(2)
-        .padEnd(13)} | ${report.summary[module].memoryUsage.stdDev
-        .toFixed(2)
-        .padEnd(20)} |`
-    );
-    console.log(
-      "----------------------------------------------------------------------------------"
-    );
-  }
-
-  // Data type specific performance
-  console.log("\n\nPERFORMANCE BY DATA TYPE:");
-  console.log(
-    "=================================================================================="
-  );
-
+  // Create report tables for each module
   for (const module of TEST_MODULES) {
     console.log(`\n${module.toUpperCase()} MODULE - DATA TYPE PERFORMANCE:`);
     console.log(
       "-----------------------------------------------------------------------------------"
     );
     console.log(
-      "| Tipo de Dato | Latencia (ms)     | Msgs/s        | Min Latencia    | Max Latencia    |"
+      "| Tipo de Dato | Latencia (ms) | Msgs/s      | CPU (%)     | Memoria (MB) |"
     );
     console.log(
-      "|--------------|-------------------|---------------|-----------------|-----------------|"
+      "|--------------|---------------|-------------|-------------|--------------|"
     );
 
     for (const dataType of DATA_TYPES) {
-      const stats = report.dataTypes[module][dataType];
+      const metrics = results[module].dataTypeResults[dataType];
+      const avgCpu = calculateAverage(metrics.cpuSamples);
+      const avgMemory = calculateAverage(metrics.memorySamples);
+
       console.log(
-        `| ${dataType.padEnd(12)} | ${stats.systemLatency.avg
+        `| ${dataType.padEnd(12)} | ${metrics.latencyMs
           .toFixed(2)
-          .padEnd(17)} | ${stats.throughput
+          .padEnd(13)} | ${metrics.throughputMsgSec
           .toFixed(2)
-          .padEnd(13)} | ${stats.systemLatency.min
+          .padEnd(11)} | ${avgCpu.toFixed(2).padEnd(11)} | ${avgMemory
           .toFixed(2)
-          .padEnd(15)} | ${stats.systemLatency.max.toFixed(2).padEnd(15)} |`
+          .padEnd(12)} |`
       );
     }
+
     console.log(
       "-----------------------------------------------------------------------------------"
     );
   }
 
-  // Save results to JSON file
+  // Save detailed results to JSON file
   fs.writeFileSync(
     path.join(__dirname, "scalability_results.json"),
-    JSON.stringify(report, null, 2)
+    JSON.stringify(results, null, 2)
   );
   console.log("\nDetailed results saved to scalability_results.json");
 }
