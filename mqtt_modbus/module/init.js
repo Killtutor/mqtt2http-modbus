@@ -12,17 +12,23 @@ const procesos = {
 //   [procesos.httpServer.pid, procesos.modbusSlave.pid],
 //   { silent: false }
 // );
-procesos.scalabilityDevice = fork(
-  "../tests/scalability.js",
-  [procesos.httpServer.pid, procesos.modbusSlave.pid],
-  { silent: false }
-);
+// procesos.scalabilityDevice = fork(
+//   "../tests/scalability.js",
+//   [procesos.httpServer.pid, procesos.modbusSlave.pid],
+//   { silent: false }
+// );
 
 // procesos.scalabilityMessages = fork(
 //   "../tests/message_count.js",
 //   [procesos.httpServer.pid, procesos.modbusSlave.pid],
 //   { silent: false }
 // );
+
+procesos.scalabilityMessages = fork(
+  "../tests/scalability_data_types.js",
+  [procesos.httpServer.pid, procesos.modbusSlave.pid],
+  { silent: false }
+);
 
 process.on("warning", (e) => console.warn(e.stack));
 process.on("exit", function () {
