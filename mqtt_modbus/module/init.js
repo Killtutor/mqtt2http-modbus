@@ -7,16 +7,16 @@ const procesos = {
   modbusSlave: fork("./modbus.js", { silent: false }),
   config: fork("./configTranslator.js", { silent: false })
 };
-// procesos.performance = fork(
-//   "../tests/performance.js",
-//   [procesos.httpServer.pid, procesos.modbusSlave.pid],
-//   { silent: false }
-// );
-procesos.scalability = fork(
-  "../tests/message_count.js",
+procesos.performance = fork(
+  "../tests/performance.js",
   [procesos.httpServer.pid, procesos.modbusSlave.pid],
   { silent: false }
 );
+// procesos.scalability = fork(
+//   "../tests/message_count.js",
+//   [procesos.httpServer.pid, procesos.modbusSlave.pid],
+//   { silent: false }
+// );
 
 process.on("warning", (e) => console.warn(e.stack));
 process.on("exit", function () {
