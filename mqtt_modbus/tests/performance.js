@@ -26,6 +26,15 @@ const PARALLEL_CLIENTS = 1; // Number of parallel MQTT clients to use
 const BATCH_SIZE = 50; // Number of messages to send in a batch
 const THROTTLE_DELAY = 10; // ms to wait between batches
 const QOS_LEVEL = 1; // QoS level for MQTT messages
+const MESSAGE_VERIFICATION_TIMEOUT = 30000; // 30 seconds timeout for message processing verification
+
+// Topics for stats
+const HTTP_STATS_REQUEST_TOPIC = "http_module/stats/request";
+const HTTP_STATS_RESPONSE_TOPIC = "http_module/stats/response";
+const HTTP_STATS_RESET_TOPIC = "http_module/stats/reset";
+const MODBUS_STATS_REQUEST_TOPIC = "modbus_module/stats/request";
+const MODBUS_STATS_RESPONSE_TOPIC = "modbus_module/stats/response";
+const MODBUS_STATS_RESET_TOPIC = "modbus_module/stats/reset";
 
 // Results storage
 const results = {
@@ -51,6 +60,9 @@ const mqttCredentials = {
   username: process.env.MQTT_USER || config.mqttUser
 };
 console.log("🚀 ~ mqttCredentials:", mqttCredentials);
+
+// Stats MQTT client
+let statsMqttClient = null;
 
 // Performance monitoring function
 async function monitorPerformance(pid, moduleType) {
@@ -83,9 +95,188 @@ async function connectMqttClients(count, moduleType) {
   return clients;
 }
 
+// Setup the stats MQTT client
+async function setupStatsMqttClient() {
+  if (statsMqttClient) {
+    await new Promise((resolve) => {
+      statsMqttClient.end(true, {}, resolve);
+    });
+  }
+
+  const clientId = `stats-requester-${Date.now()}`;
+  const clientOptions = {
+    clientId,
+    username: process.env.MQTT_USER || config.mqttUser,
+    password: process.env.MQTT_PASS || config.mqttPass
+  };
+
+  return new Promise((resolve, reject) => {
+    statsMqttClient = mqtt.connect(mqttConnection, clientOptions);
+
+    statsMqttClient.on("connect", () => {
+      // Subscribe to stats response topics
+      statsMqttClient.subscribe(HTTP_STATS_RESPONSE_TOPIC);
+      statsMqttClient.subscribe(MODBUS_STATS_RESPONSE_TOPIC);
+      console.info(`Stats MQTT client connected with ID: ${clientId}`);
+      resolve(statsMqttClient);
+    });
+
+    statsMqttClient.on("error", (err) => {
+      console.error(`Stats MQTT client error:`, err);
+      reject(err);
+    });
+  });
+}
+
+// Get processed message count via MQTT
+async function getProcessedMessageCount(isHttp) {
+  return new Promise((resolve, reject) => {
+    const requestTopic = isHttp
+      ? HTTP_STATS_REQUEST_TOPIC
+      : MODBUS_STATS_REQUEST_TOPIC;
+    const responseTopic = isHttp
+      ? HTTP_STATS_RESPONSE_TOPIC
+      : MODBUS_STATS_RESPONSE_TOPIC;
+
+    // Set timeout
+    const timeout = setTimeout(() => {
+      statsMqttClient.removeListener("message", messageHandler);
+      console.warn(
+        `Timeout (${
+          MESSAGE_VERIFICATION_TIMEOUT / 1000
+        }s) waiting for message count for ${isHttp ? "HTTP" : "Modbus"} module`
+      );
+      resolve(0);
+    }, MESSAGE_VERIFICATION_TIMEOUT);
+
+    // Set up response handler
+    const messageHandler = (topic, message) => {
+      if (topic === responseTopic) {
+        clearTimeout(timeout);
+        try {
+          const data = JSON.parse(message.toString());
+          statsMqttClient.removeListener("message", messageHandler);
+          resolve(data.processedMessages || 0);
+        } catch (e) {
+          console.error(
+            `Error parsing stats response from ${responseTopic}:`,
+            e
+          );
+          statsMqttClient.removeListener("message", messageHandler);
+          resolve(0);
+        }
+      }
+    };
+
+    // Add message handler
+    statsMqttClient.on("message", messageHandler);
+
+    // Send request
+    statsMqttClient.publish(requestTopic, "");
+  });
+}
+
+// Reset message counters via MQTT
+async function resetMessageCounters(isHttp) {
+  return new Promise((resolve) => {
+    const resetTopic = isHttp
+      ? HTTP_STATS_RESET_TOPIC
+      : MODBUS_STATS_RESET_TOPIC;
+    const responseTopic = isHttp
+      ? HTTP_STATS_RESPONSE_TOPIC
+      : MODBUS_STATS_RESPONSE_TOPIC;
+
+    // Set timeout
+    const timeout = setTimeout(() => {
+      statsMqttClient.removeListener("message", messageHandler);
+      console.warn(
+        `Timeout (${
+          MESSAGE_VERIFICATION_TIMEOUT / 1000
+        }s) waiting for reset confirmation from ${
+          isHttp ? "HTTP" : "Modbus"
+        } module`
+      );
+      resolve();
+    }, MESSAGE_VERIFICATION_TIMEOUT);
+
+    // Set up response handler
+    const messageHandler = (topic, message) => {
+      if (topic === responseTopic) {
+        try {
+          const data = JSON.parse(message.toString());
+          if (data.reset) {
+            clearTimeout(timeout);
+            statsMqttClient.removeListener("message", messageHandler);
+            resolve();
+          }
+        } catch (e) {
+          console.error(
+            `Error parsing reset response from ${responseTopic}:`,
+            e
+          );
+          clearTimeout(timeout);
+          statsMqttClient.removeListener("message", messageHandler);
+          resolve();
+        }
+      }
+    };
+
+    // Add message handler
+    statsMqttClient.on("message", messageHandler);
+
+    // Send request
+    statsMqttClient.publish(resetTopic, "");
+  });
+}
+
+// Wait for all messages to be processed
+async function waitForMessageProcessing(totalSent, isHttp) {
+  console.log(
+    `Waiting for ${totalSent} messages to be processed by ${
+      isHttp ? "HTTP" : "MODBUS"
+    } module...`
+  );
+
+  const maxWaitTime = 60000; // 60 seconds max wait
+  const startTime = performance.now();
+  let processed = 0;
+  let timeWaiting = 0;
+
+  while (processed < totalSent && timeWaiting < maxWaitTime) {
+    processed = await getProcessedMessageCount(isHttp);
+    const percentComplete = Math.round((processed / totalSent) * 100);
+    console.log(
+      `Progress: ${processed}/${totalSent} messages processed (${percentComplete}%)`
+    );
+
+    if (processed >= totalSent) {
+      console.log(`All ${totalSent} messages processed successfully!`);
+      break;
+    }
+
+    // Wait before checking again
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    timeWaiting = performance.now() - startTime;
+  }
+
+  if (processed < totalSent) {
+    console.warn(
+      `Timeout waiting for message processing. Only ${processed}/${totalSent} processed (${Math.round(
+        (processed / totalSent) * 100
+      )}%).`
+    );
+  }
+
+  return processed;
+}
+
 // Test the HTTP module
 async function testHttpModule(httpPid) {
   console.log("Starting HTTP module performance test...");
+
+  // Reset message counters before starting
+  await resetMessageCounters(true);
+
   let messageCount = 0;
   const httpLatencies = [];
   const startTime = performance.now();
@@ -160,10 +351,22 @@ async function testHttpModule(httpPid) {
     const clientCounts = await Promise.all(clientPromises);
     messageCount = clientCounts.reduce((a, b) => a + b, 0);
 
-    // Calculate throughput
+    console.log(`Sent a total of ${messageCount} HTTP messages`);
+
+    // Wait for all messages to be processed
+    const processedCount = await waitForMessageProcessing(messageCount, true);
+
+    // Calculate throughput based on actually processed messages
     const endTime = performance.now();
     const duration = (endTime - startTime) / 1000; // in seconds
-    results.http.throughput.push(messageCount / duration);
+    const actualThroughput = processedCount / duration;
+    results.http.throughput.push(actualThroughput);
+
+    console.log(
+      `HTTP throughput: ${actualThroughput.toFixed(
+        2
+      )} msgs/s (${processedCount} messages in ${duration.toFixed(2)}s)`
+    );
 
     // Save latency results
     results.http.latencies = httpLatencies;
@@ -183,6 +386,10 @@ async function testHttpModule(httpPid) {
 // Test the Modbus module
 async function testModbusModule(modbusPid) {
   console.log("Starting Modbus module performance test...");
+
+  // Reset message counters before starting
+  await resetMessageCounters(false);
+
   let messageCount = 0;
   const modbusLatencies = [];
   const startTime = performance.now();
@@ -258,10 +465,22 @@ async function testModbusModule(modbusPid) {
     const clientCounts = await Promise.all(clientPromises);
     messageCount = clientCounts.reduce((a, b) => a + b, 0);
 
-    // Calculate throughput
+    console.log(`Sent a total of ${messageCount} MODBUS messages`);
+
+    // Wait for all messages to be processed
+    const processedCount = await waitForMessageProcessing(messageCount, false);
+
+    // Calculate throughput based on actually processed messages
     const endTime = performance.now();
     const duration = (endTime - startTime) / 1000; // in seconds
-    results.modbus.throughput.push(messageCount / duration);
+    const actualThroughput = processedCount / duration;
+    results.modbus.throughput.push(actualThroughput);
+
+    console.log(
+      `MODBUS throughput: ${actualThroughput.toFixed(
+        2
+      )} msgs/s (${processedCount} messages in ${duration.toFixed(2)}s)`
+    );
 
     // Save latency results
     results.modbus.latencies = modbusLatencies;
@@ -384,20 +603,28 @@ function generateReport() {
 
 // Main function to run the performance tests
 async function runPerformanceTests(httpPid, modbusPid) {
+  // Setup the stats MQTT client first
+  await setupStatsMqttClient();
+
   // Run HTTP module test
   await testHttpModule(httpPid);
 
   // Wait a bit to let system stabilize
+  console.log(
+    "Waiting 30 seconds for system to stabilize before the next test..."
+  );
   await new Promise((resolve) => setTimeout(resolve, 30000));
 
   // Run Modbus module test
   await testModbusModule(modbusPid);
 
-  // Wait for any pending messages to be processed
-  await new Promise((resolve) => setTimeout(resolve, 60000));
-
   // Generate report
   generateReport();
+
+  // Clean up
+  if (statsMqttClient) {
+    statsMqttClient.end();
+  }
 
   console.log("Performance tests completed.");
 }
