@@ -21,7 +21,7 @@ const pidusage = require("pidusage");
 const config = require("./config.json");
 
 // Test configuration
-const TEST_DURATION = 120000; // 2 minutes per device count test
+const TEST_DURATION = 60000; // 2 minutes per device count test
 const MESSAGE_RATE = 15; // Messages per second per device - FIXED RATE
 const SAMPLE_INTERVAL = 1000; // 1 second sampling interval for CPU/mem
 const DEVICE_COUNTS = [5, 20, 50, 100]; // Number of simulated devices
