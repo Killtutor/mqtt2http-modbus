@@ -185,7 +185,10 @@ function generateData(dataType) {
       return `test-string-${Math.random().toString(36).substring(2, 10)}`;
     case "json":
       return {
-        temperature: parseFloat((15 + Math.random() * 15).toFixed(2))
+        temperature: parseFloat((15 + Math.random() * 15).toFixed(2)),
+        humidity: parseFloat((30 + Math.random() * 50).toFixed(2)),
+        pressure: parseFloat((980 + Math.random() * 40).toFixed(1)),
+        status: Math.random() > 0.5 ? "active" : "standby"
       };
     default:
       return 0;
