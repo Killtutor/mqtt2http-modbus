@@ -21,16 +21,15 @@ const pidusage = require("pidusage");
 const config = require("./config.json");
 
 // Test configuration
-const TEST_DURATION = 60000; // 1 minute per device count test
 const MESSAGES_PER_DEVICE = 15; // Total messages per device per test - FIXED COUNT
 const SAMPLE_INTERVAL = 1000; // 1 second sampling interval for CPU/mem
 const DEVICE_COUNTS = [5, 20, 50, 100]; // Number of simulated devices
-const THROTTLE_DELAY = 200; // Delay between message batches
 const BATCH_SIZE = 3; // Send messages in small batches
 const PROCESSING_CHECK_INTERVAL = 2500; // Check processing progress every 2.5 seconds
 const QOS_LEVEL = 1; // QoS level for MQTT messages
 const MESSAGE_VERIFICATION_TIMEOUT = 30000; // 30 seconds timeout for message processing verification
 const TEST_MODULES = ["http", "modbus"];
+const BACKLOG_CHECK_THRESHOLD = 5; // Check for backlog after this many batches
 
 // Topics for stats
 const HTTP_STATS_REQUEST_TOPIC = "http_module/stats/request";
@@ -358,30 +357,40 @@ async function testHttpModuleWithDevices(httpPid, deviceCount) {
   }, SAMPLE_INTERVAL);
 
   // Fixed number of messages per device
-  const messagesPerDevice = MESSAGES_PER_DEVICE;
+  console.log(`Each device will send ${MESSAGES_PER_DEVICE} messages total`);
 
-  // Calculate delay between messages to spread them across the test duration
-  const messageDelay = Math.floor(TEST_DURATION / messagesPerDevice);
-
-  console.log(
-    `Each device will send ${messagesPerDevice} messages total, with ~${messageDelay}ms between messages`
-  );
-
-  // Send messages from each device
+  // Send messages from each device as quickly as possible while monitoring backlog
   const devicePromises = clients.map((client, deviceIndex) => {
     return new Promise(async (resolve) => {
       let deviceMessageCount = 0;
+      let batchCount = 0;
 
       // Function to send a batch of messages
       const sendBatch = async () => {
-        if (deviceMessageCount >= messagesPerDevice) {
+        if (deviceMessageCount >= MESSAGES_PER_DEVICE) {
           return;
+        }
+
+        // Check for backlog periodically
+        if (++batchCount % BACKLOG_CHECK_THRESHOLD === 0) {
+          const processed = await getProcessedMessageCount(true);
+          const backlog = messageCount - processed;
+
+          // If backlog is too large, wait for system to catch up
+          if (backlog > deviceCount * 5) {
+            console.log(
+              `Backlog detected (${backlog} messages). Pausing to let system catch up.`
+            );
+            await new Promise((resolve) =>
+              setTimeout(resolve, Math.min(backlog * 10, 5000))
+            );
+          }
         }
 
         // Determine batch size (don't exceed remaining messages)
         const batchSize = Math.min(
           BATCH_SIZE,
-          messagesPerDevice - deviceMessageCount
+          MESSAGES_PER_DEVICE - deviceMessageCount
         );
         const batchPromises = [];
 
@@ -417,9 +426,10 @@ async function testHttpModuleWithDevices(httpPid, deviceCount) {
         deviceMessageCount += batchSize;
         messageCount += batchSize;
 
-        // If we still have messages to send, schedule the next batch
-        if (deviceMessageCount < messagesPerDevice) {
-          setTimeout(sendBatch, messageDelay);
+        // If we still have messages to send, schedule the next batch immediately
+        if (deviceMessageCount < MESSAGES_PER_DEVICE) {
+          // Use setImmediate for faster sending without flooding the event loop
+          setImmediate(sendBatch);
         } else {
           console.log(
             `Device ${
@@ -546,30 +556,40 @@ async function testModbusModuleWithDevices(modbusPid, deviceCount) {
   }, SAMPLE_INTERVAL);
 
   // Fixed number of messages per device
-  const messagesPerDevice = MESSAGES_PER_DEVICE;
+  console.log(`Each device will send ${MESSAGES_PER_DEVICE} messages total`);
 
-  // Calculate delay between messages to spread them across the test duration
-  const messageDelay = Math.floor(TEST_DURATION / messagesPerDevice);
-
-  console.log(
-    `Each device will send ${messagesPerDevice} messages total, with ~${messageDelay}ms between messages`
-  );
-
-  // Send messages from each device
+  // Send messages from each device as quickly as possible while monitoring backlog
   const devicePromises = clients.map((client, deviceIndex) => {
     return new Promise(async (resolve) => {
       let deviceMessageCount = 0;
+      let batchCount = 0;
 
       // Function to send a batch of messages
       const sendBatch = async () => {
-        if (deviceMessageCount >= messagesPerDevice) {
+        if (deviceMessageCount >= MESSAGES_PER_DEVICE) {
           return;
+        }
+
+        // Check for backlog periodically
+        if (++batchCount % BACKLOG_CHECK_THRESHOLD === 0) {
+          const processed = await getProcessedMessageCount(false);
+          const backlog = messageCount - processed;
+
+          // If backlog is too large, wait for system to catch up
+          if (backlog > deviceCount * 5) {
+            console.log(
+              `Backlog detected (${backlog} messages). Pausing to let system catch up.`
+            );
+            await new Promise((resolve) =>
+              setTimeout(resolve, Math.min(backlog * 10, 5000))
+            );
+          }
         }
 
         // Determine batch size (don't exceed remaining messages)
         const batchSize = Math.min(
           BATCH_SIZE,
-          messagesPerDevice - deviceMessageCount
+          MESSAGES_PER_DEVICE - deviceMessageCount
         );
         const batchPromises = [];
 
@@ -601,9 +621,10 @@ async function testModbusModuleWithDevices(modbusPid, deviceCount) {
         deviceMessageCount += batchSize;
         messageCount += batchSize;
 
-        // If we still have messages to send, schedule the next batch
-        if (deviceMessageCount < messagesPerDevice) {
-          setTimeout(sendBatch, messageDelay);
+        // If we still have messages to send, schedule the next batch immediately
+        if (deviceMessageCount < MESSAGES_PER_DEVICE) {
+          // Use setImmediate for faster sending without flooding the event loop
+          setImmediate(sendBatch);
         } else {
           console.log(
             `Device ${
@@ -687,13 +708,13 @@ function generateScalabilityReport() {
   for (const module of TEST_MODULES) {
     console.log(`\n${module.toUpperCase()} Module Scalability:`);
     console.log(
-      "---------------------------------------------------------------------------------------------------------------"
+      "----------------------------------------------------------------------"
     );
     console.log(
-      "| Dispositivos | Latencia (ms) | mensajes/s | CPU (%) | memoria (MB) | Enviados | Procesados | Proc. Rate (%) |"
+      "| Dispositivos | Latencia (ms) | mensajes/s | CPU (%) | memoria (MB) |"
     );
     console.log(
-      "|--------------|---------------|------------|---------|--------------|----------|------------|----------------|"
+      "|--------------|---------------|------------|---------|--------------|"
     );
 
     for (const deviceCount of DEVICE_COUNTS) {
@@ -702,12 +723,8 @@ function generateScalabilityReport() {
         throughput: 0,
         cpuUsage: 0,
         memoryUsage: 0,
-        sentMessages: 0,
-        processedMessages: 0,
         processingRate: 0
       };
-
-      const processingRatePercent = (stats.processingRate * 100).toFixed(1);
 
       console.log(
         `| ${String(deviceCount).padEnd(12)} | ${stats.latency
@@ -716,16 +733,12 @@ function generateScalabilityReport() {
           .toFixed(2)
           .padEnd(10)} | ${stats.cpuUsage
           .toFixed(2)
-          .padEnd(7)} | ${stats.memoryUsage.toFixed(2).padEnd(12)} | ${String(
-          stats.sentMessages
-        ).padEnd(8)} | ${String(stats.processedMessages).padEnd(
-          10
-        )} | ${processingRatePercent.padEnd(16)} |`
+          .padEnd(7)} | ${stats.memoryUsage.toFixed(2).padEnd(12)} |`
       );
     }
 
     console.log(
-      "---------------------------------------------------------------------------------------------------------------"
+      "----------------------------------------------------------------------"
     );
   }
 
