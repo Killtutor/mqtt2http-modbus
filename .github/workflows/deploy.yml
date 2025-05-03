@@ -10,7 +10,7 @@ jobs:
   build-deploy-prod:
     name: "Build MQTT2HTTP-MODBUS DEMO"
     environment: production
-    runs-on: kamatera
+    runs-on: kriollotech
 
     defaults:
       run:
