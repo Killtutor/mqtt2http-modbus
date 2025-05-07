@@ -134,8 +134,10 @@
 
     <div id="fixedHeaderBack"></div>
 
-    <div id="mainHeader">
-      <img id="mainLogo" src="images/logo_pdvsa_blanco.png" alt="Logo"/>
+    <div id="mainHeader" style="background-color:#057fbe">
+      <img id="mainLogo" src="images/logo_UCV.svg" alt="Logo"/>
+      <img id="mainLogo" src="images/logo_FIUCV.svg" alt="Logo"/>
+      <img id="mainLogo" src="images/logo_eie.png" alt="Logo"/>
     </div>
 
     <c:if test="${!simple}">
