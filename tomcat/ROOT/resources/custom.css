@@ -1,12 +1,17 @@
 #mainHeader {
     background-color: #057fbe;
     height: 100px;
-    text-align: left;
+    text-align: center;
 }
 
 #mainLogo {
     margin-top: 10px;
     margin-left: 25px;
+    height: 75px;
+}
+#mainLogo2 {
+    margin-top: 10px;
+    margin-left: -35px;
     height: 75px;
 }
 
