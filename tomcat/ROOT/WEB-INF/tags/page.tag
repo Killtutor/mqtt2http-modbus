@@ -134,8 +134,8 @@
 
     <div id="fixedHeaderBack"></div>
 
-    <div id="mainHeader" style="background-color:#057fbe">
-      <img id="mainLogo" src="images/logo_UCV.svg" alt="Logo"/>
+    <div id="mainHeader">
+      <img id="mainLogo" src="images/logo_UCV2.svg" alt="Logo"/>
       <img id="mainLogo" src="images/logo_FIUCV.svg" alt="Logo"/>
       <img id="mainLogo" src="images/logo_eie.png" alt="Logo"/>
     </div>

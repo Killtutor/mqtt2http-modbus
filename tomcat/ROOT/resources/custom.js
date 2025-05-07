@@ -1,3 +1,3 @@
-$(function() {
-	$('#mainHeader').append('<div id="bannerText">Sistema de Monitoreo PDVSA</div>')
+$(function () {
+  $("#mainHeader").append('<div id="bannerText">Sistema de Monitoreo</div>');
 });
