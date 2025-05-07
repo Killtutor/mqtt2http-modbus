@@ -406,7 +406,7 @@ async function testHttpModule(httpPid) {
           try {
             const promise = new Promise((resolve) => {
               client.publish(
-                `PDVSA_SEDE1_http/string${clientIndex + 1}`,
+                `EIE_SEDE1_http/string${clientIndex + 1}`,
                 JSON.stringify({
                   temp: 18 + Math.random() * 10,
                   presion: 2.5 + Math.random(),

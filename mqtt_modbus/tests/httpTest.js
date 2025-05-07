@@ -4,20 +4,20 @@ const { setTimeout } = require("timers/promises");
 
 async function functionalityTest(client) {
   return Promise.allSettled([
-    client.publishAsync(`PDVSA_SEDE1_http/boolean0`, "0"),
-    client.publishAsync(`PDVSA_SEDE1_http/boolean1`, "1"),
-    client.publishAsync(`PDVSA_SEDE1_http/booleanf`, "false"),
-    client.publishAsync(`PDVSA_SEDE1_http/booleanT`, "true"),
-    client.publishAsync(`PDVSA_SEDE1_http/integerP`, "1234"),
-    client.publishAsync(`PDVSA_SEDE1_http/integerN`, "-1234"),
-    client.publishAsync(`PDVSA_SEDE1_http/floatP`, "12.34"),
-    client.publishAsync(`PDVSA_SEDE1_http/floatN`, "-12.34"),
+    client.publishAsync(`EIE_SEDE1_http/boolean0`, "0"),
+    client.publishAsync(`EIE_SEDE1_http/boolean1`, "1"),
+    client.publishAsync(`EIE_SEDE1_http/booleanf`, "false"),
+    client.publishAsync(`EIE_SEDE1_http/booleanT`, "true"),
+    client.publishAsync(`EIE_SEDE1_http/integerP`, "1234"),
+    client.publishAsync(`EIE_SEDE1_http/integerN`, "-1234"),
+    client.publishAsync(`EIE_SEDE1_http/floatP`, "12.34"),
+    client.publishAsync(`EIE_SEDE1_http/floatN`, "-12.34"),
     client.publishAsync(
-      `PDVSA_SEDE1_http/string0`,
+      `EIE_SEDE1_http/string0`,
       "Probando Alphanumericos, en HTTP y MODBUS"
     ),
     client.publishAsync(
-      `PDVSA_SEDE1_http/string1`,
+      `EIE_SEDE1_http/string1`,
       JSON.stringify({
         temp: 15,
         presion: 1.5,

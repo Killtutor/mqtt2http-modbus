@@ -399,7 +399,7 @@ async function testHttpModuleWithDevices(httpPid, deviceCount) {
 
           const promise = new Promise((resolve) => {
             client.publish(
-              `PDVSA_SEDE1_http/string${deviceIndex + 1}`,
+              `EIE_SEDE1_http/string${deviceIndex + 1}`,
               JSON.stringify({
                 humedad: Math.random()
               }),

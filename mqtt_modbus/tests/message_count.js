@@ -12,7 +12,7 @@ const MESSAGE_COUNTS = [10, 25, 50, 100, 200, 500, 600, 700, 800, 900];
 const DEFAULT_DEVICE_COUNT = 1; // Default number of devices to simulate
 // Find the first sede in config
 const firstSede = config.modbusSedes[0];
-const HTTP_TOPIC_TEMPLATE = "PDVSA_SEDE1_http/string1"; // Topic template for HTTP
+const HTTP_TOPIC_TEMPLATE = "EIE_SEDE1_http/string1"; // Topic template for HTTP
 const MODBUS_TOPIC_BASE = `${firstSede.nombre}`; // Base topic for Modbus
 const MODBUS_TOPIC_TEMPLATE = `${MODBUS_TOPIC_BASE}/1/holding/0`; // Topic template for Modbus
 const CLIENT_ID_TEMPLATE = "scalability-tester-mc-{device_id}-{timestamp}"; // Unique client ID

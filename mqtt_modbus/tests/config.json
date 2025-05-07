@@ -11,7 +11,7 @@
         "port": 3001,
         "devices": [
             {
-                "nombre": "PDVSA_SEDE1_http",
+                "nombre": "EIE_SEDE1_http",
                 "points": [
                     {
                         "type": "binary",
@@ -24,7 +24,7 @@
                 ]
             },
             {
-                "nombre": "PDVSA_SEDE2_http",
+                "nombre": "EIE_SEDE2_http",
                 "points": [
                     {
                         "type": "alpha",
@@ -40,21 +40,21 @@
     },
     "modbusSedes": [
         {
-            "nombre": "PDVSA_SEDE1_modbus",
+            "nombre": "EIE_SEDE1_modbus",
             "port": 8033,
             "rtus": 10,
             "refreshRatePeriod": "SECONDS",
             "refreshRate": 5
         },
         {
-            "nombre": "PDVSA_SEDE2_modbus",
+            "nombre": "EIE_SEDE2_modbus",
             "port": 8034,
             "rtus": 10,
             "refreshRatePeriod": "SECONDS",
             "refreshRate": 10
         },
         {
-            "nombre": "PDVSA_SEDE3_modbus",
+            "nombre": "EIE_SEDE3_modbus",
             "port": 8035,
             "rtus": 10,
             "refreshRatePeriod": "SECONDS",

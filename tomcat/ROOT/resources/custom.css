@@ -18,7 +18,7 @@
 #bannerText {
 	font-size: 25px;
 	color: white;
-	display: inline-block;
+	display: none;
 	position: absolute;
 	margin-top: 40px;
 	margin-left: 15px;

@@ -449,7 +449,7 @@ async function testHttpScalability(httpPid) {
               const payload =
                 typeof data === "object" ? JSON.stringify(data) : String(data);
               client.publish(
-                `PDVSA_SEDE1_http/device1/${dataType}`, // Only using device1
+                `EIE_SEDE1_http/device1/${dataType}`, // Only using device1
                 payload,
                 { qos: 1 },
                 () => {

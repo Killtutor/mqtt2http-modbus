@@ -12,7 +12,7 @@ const firstSede = config.modbusSedes[0];
 // --- Configuration ---
 const MESSAGE_TYPES_HTTP = ["boolean", "numero", "string", "json"];
 const MESSAGE_TYPES_MODBUS = ["input", "holding", "string"];
-const HTTP_TOPIC_TEMPLATE = "PDVSA_SEDE1_http/{msg_type}"; // Topic template
+const HTTP_TOPIC_TEMPLATE = "EIE_SEDE1_http/{msg_type}"; // Topic template
 const MODBUS_TOPIC_TEMPLATE = `${firstSede.nombre}/1/{msg_type}/0`; // Topic template
 const STRING_PAYLOAD_LENGTH = 100; // Length for 'cadena' type
 const MONITOR_INTERVAL = 1000; // ms for CPU/Mem sampling
