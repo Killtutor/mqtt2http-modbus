@@ -24,11 +24,11 @@ const procesos = {
 //   { silent: false }
 // );
 
-procesos.scalabilityMessages = fork(
-  "../tests/scalability_data_types.js",
-  [procesos.httpServer.pid, procesos.modbusSlave.pid],
-  { silent: false }
-);
+// procesos.scalabilityMessages = fork(
+//   "../tests/scalability_data_types.js",
+//   [procesos.httpServer.pid, procesos.modbusSlave.pid],
+//   { silent: false }
+// );
 
 process.on("warning", (e) => console.warn(e.stack));
 process.on("exit", function () {

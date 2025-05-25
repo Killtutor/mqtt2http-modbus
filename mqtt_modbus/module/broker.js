@@ -27,11 +27,11 @@ if (
       false
     );
   };
-  aedes.on("clientError", () => {
-    console.log("Client Error");
+  aedes.on("clientError", (e) => {
+    console.log("Client Error", e);
   });
-  aedes.on("connectionError", () => {
-    console.log("connectionError Error");
+  aedes.on("connectionError", (e) => {
+    console.log("connectionError Error", e);
   });
   // The server instance thats going to be handled by aedes handler.
   // This server for normal MQTT protocol
