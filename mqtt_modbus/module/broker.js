@@ -19,6 +19,7 @@ if (
       username === (process.env.MQTT_USER || config.mqttUser) &&
       password === (process.env.MQTT_PASS || config.mqttPass)
     ) {
+      console.log("Authentication successful.");
       return callback(null, true);
     }
     console.log("Authentication failed.");
