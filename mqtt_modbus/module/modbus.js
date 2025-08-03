@@ -471,9 +471,13 @@ function initServerTCP(sede, puerto) {
           console.info(
             `setRegister ${sede}/${unitID}/setcoil/${addr} ${value}`
           );
-          mqttClient.publish(`${sede}/${unitID}/setcoil/${addr}`, value, {
-            qos: 1
-          });
+          mqttClient.publish(
+            `${sede}/${unitID}/setcoil/${addr}`,
+            String(value),
+            {
+              qos: 1
+            }
+          );
         } catch (error) {
           console.error(
             `Error in setRegister for ${sede}/${unitID}/setcoil/${addr}:`,
@@ -485,9 +489,13 @@ function initServerTCP(sede, puerto) {
       setCoil: function (addr, state, unitID) {
         try {
           console.info(`setCoil ${sede}/${unitID}/setcoil/${addr} ${state}`);
-          mqttClient.publish(`${sede}/${unitID}/setcoil/${addr}`, state, {
-            qos: 1
-          });
+          mqttClient.publish(
+            `${sede}/${unitID}/setcoil/${addr}`,
+            String(state),
+            {
+              qos: 1
+            }
+          );
         } catch (error) {
           console.error(
             `Error in setCoil for ${sede}/${unitID}/setcoil/${addr}:`,
