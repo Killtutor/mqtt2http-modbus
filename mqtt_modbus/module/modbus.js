@@ -468,6 +468,9 @@ function initServerTCP(sede, puerto) {
     var vector = {
       setRegister: function (addr, value, unitID) {
         try {
+          console.info(
+            `setRegister ${sede}/${unitID}/setcoil/${addr} ${value}`
+          );
           mqttClient.publish(`${sede}/${unitID}/setcoil/${addr}`, value, {
             qos: 1
           });
@@ -481,6 +484,7 @@ function initServerTCP(sede, puerto) {
       },
       setCoil: function (addr, state, unitID) {
         try {
+          console.info(`setCoil ${sede}/${unitID}/setcoil/${addr} ${state}`);
           mqttClient.publish(`${sede}/${unitID}/setcoil/${addr}`, state, {
             qos: 1
           });
