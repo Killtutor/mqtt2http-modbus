@@ -466,17 +466,25 @@ function initServerTCP(sede, puerto) {
     // create an empty modbus client
     var ModbusRTU = require("modbus-serial");
     var vector = {
-      setRegister: function (addr, value, unitID) {
+      setRegister: async function (addr, value, unitID) {
         try {
-          console.info(
-            `setRegister ${sede}/${unitID}/setcoil/${addr} ${value}`
-          );
-          mqttClient.publish(
-            `${sede}/${unitID}/setcoil/${addr}`,
-            String(value),
-            {
-              qos: 1
-            }
+          const topic = `${sede}/rtu/${unitID}/hr/${addr}`;
+          const numValue = Number(value);
+          if (isNaN(numValue)) {
+            console.warn(`Invalid number for topic ${topic}: ${value}`);
+            return;
+          }
+
+          const redisBatch = [];
+          const byteArray = floatToByteArray(numValue);
+          for (let i = 0; i < byteArray.length; i++) {
+            redisBatch.push({
+              key: `${sede}/rtu/${unitID}/hr/${Number(addr) + i}`,
+              value: String(byteArray[i])
+            });
+          }
+          await Promise.allSettled(
+            redisBatch.map((item) => redisSetWithRetry(item.key, item.value))
           );
         } catch (error) {
           console.error(
@@ -490,7 +498,7 @@ function initServerTCP(sede, puerto) {
         try {
           console.info(`setCoil ${sede}/${unitID}/setcoil/${addr} ${state}`);
           mqttClient.publish(
-            `${sede}/${unitID}/setcoil/${addr}`,
+            `${sede}/rtu/${unitID}/cr/${addr}`,
             String(state),
             {
               qos: 1
