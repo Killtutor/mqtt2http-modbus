@@ -69,7 +69,7 @@ Esta sección configura el servidor HTTP que expone los datos en tiempo real.
 
 - `port`: El puerto en el que correrá el servidor HTTP.
 - `devices`: Un array de dispositivos. Cada dispositivo tiene:
-  - `nombre`: Un nombre único para el dispositivo. Los datos de este dispositivo estarán disponibles bajo un tópico MQTT específico (`/Vemetris/+/+/EIE_SEDE1_http/#`).
+  - `nombre`: Un nombre único para el dispositivo. Los datos de este dispositivo estarán disponibles bajo un tópico MQTT específico (`/EIE_SEDE1_http/pointName`).
   - `points`: Un array de puntos de datos. Cada punto tiene:
     - `type`: El tipo de dato (`binary`, `numeric`, `alpha`, `multi`).
     - `name`: El nombre del punto de datos.
