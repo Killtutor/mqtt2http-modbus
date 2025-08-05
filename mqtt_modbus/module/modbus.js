@@ -230,7 +230,7 @@ async function processMessage(topic, message) {
     if (proTopic[0] === "$SYS") {
       return;
     }
-
+    // topic example: sede/RTU#/retype/addr#
     const sede = proTopic[0];
     const RTU = parseInt(proTopic[1]);
     const retype = retTypeTranslator[proTopic[2]] ?? "ir";
@@ -468,12 +468,15 @@ function initServerTCP(sede, puerto) {
     var vector = {
       setRegister: async function (addr, value, unitID) {
         try {
-          const topic = `${sede}/rtu/${unitID}/hr/${addr}`;
+          const topic = `${sede}/${unitID}/hr/${addr}`;
           const numValue = Number(value);
           if (isNaN(numValue)) {
             console.warn(`Invalid number for topic ${topic}: ${value}`);
             return;
           }
+          mqttClient.publish(`${sede}/${unitID}/hr/${addr}`, String(numValue), {
+            qos: 1
+          });
 
           const redisBatch = [];
           const byteArray = floatToByteArray(numValue);
@@ -496,14 +499,10 @@ function initServerTCP(sede, puerto) {
       },
       setCoil: function (addr, state, unitID) {
         try {
-          console.info(`setCoil ${sede}/${unitID}/setcoil/${addr} ${state}`);
-          mqttClient.publish(
-            `${sede}/rtu/${unitID}/cr/${addr}`,
-            String(state),
-            {
-              qos: 1
-            }
-          );
+          console.info(`setCoil ${sede}/${unitID}/cr/${addr} ${state}`);
+          mqttClient.publish(`${sede}/${unitID}/cr/${addr}`, String(state), {
+            qos: 1
+          });
         } catch (error) {
           console.error(
             `Error in setCoil for ${sede}/${unitID}/setcoil/${addr}:`,
