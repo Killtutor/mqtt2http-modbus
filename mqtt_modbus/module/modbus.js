@@ -474,15 +474,19 @@ function initServerTCP(sede, puerto) {
             console.warn(`Invalid number for topic ${topic}: ${value}`);
             return;
           }
-          mqttClient.publish(`${sede}/${unitID}/hr/${addr}`, String(numValue), {
-            qos: 1
-          });
+          mqttClient.publish(
+            `${sede}/${unitID}/holding/${addr}`,
+            String(numValue),
+            {
+              qos: 1
+            }
+          );
 
           const redisBatch = [];
           const byteArray = floatToByteArray(numValue);
           for (let i = 0; i < byteArray.length; i++) {
             redisBatch.push({
-              key: `${sede}/rtu/${unitID}/hr/${Number(addr) + i}`,
+              key: `${sede}/rtu/${unitID}/holding/${Number(addr) + i}`,
               value: String(byteArray[i])
             });
           }
@@ -500,7 +504,7 @@ function initServerTCP(sede, puerto) {
       setCoil: function (addr, state, unitID) {
         try {
           console.info(`setCoil ${sede}/${unitID}/cr/${addr} ${state}`);
-          mqttClient.publish(`${sede}/${unitID}/cr/${addr}`, String(state), {
+          mqttClient.publish(`${sede}/${unitID}/coil/${addr}`, String(state), {
             qos: 1
           });
         } catch (error) {
