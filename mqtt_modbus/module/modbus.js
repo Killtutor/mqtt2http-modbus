@@ -484,6 +484,7 @@ function initServerTCP(sede, puerto) {
 
           const redisBatch = [];
           const byteArray = floatToByteArray(numValue);
+          console.log("🚀 ~ initServerTCP ~ byteArray:", byteArray);
           for (let i = 0; i < byteArray.length; i++) {
             redisBatch.push({
               key: `${sede}/rtu/${unitID}/holding/${Number(addr) + i}`,
