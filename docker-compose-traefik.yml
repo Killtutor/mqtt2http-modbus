@@ -46,7 +46,5 @@ networks:
     external: true
 
 volumes:
-  cache:
-    driver: local
   letsencrypt:
     driver: local
